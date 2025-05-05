@@ -1,84 +1,12 @@
-use bytes::{BufMut, BytesMut};
+use bytes::BufMut;
 use serde::{Serialize, ser};
 
 use crate::{
-    config::{Config, ContainerLengthStrategy, EndiannessStrategy, OptionalStrategy},
+    config::OptionalStrategy,
     error::{Error, Result},
 };
 
-#[derive(Debug, Default)]
-pub struct BinarySerializer {
-    // Buffer to store the serialized binary output
-    output: BytesMut,
-    // Configuration for serialization (e.g., endianness, optional strategy, etc.)
-    config: Config,
-}
-
-impl BinarySerializer {
-    /// Creates a new `BinarySerializer` with the specified configuration.
-    pub fn new(config: Config) -> Self {
-        Self {
-            output: BytesMut::new(),
-            config,
-        }
-    }
-
-    /// Consumes the serializer and returns the serialized output as `BytesMut`.
-    pub fn output(self) -> BytesMut {
-        self.output
-    }
-
-    /// Checks if the serialized output exceeds the configured size limit.
-    /// Returns an error if the limit is exceeded.
-    fn check_limit(&self) -> Result<()> {
-        if let Some(limit) = self.config.limit {
-            if self.output.len() > limit {
-                return Err(Error::LimitExceeded {
-                    limit,
-                    size: self.output.len(),
-                });
-            }
-        }
-        Ok(())
-    }
-
-    /// Writes the length of a container (e.g., sequence, string) to the output buffer
-    /// based on the configured endianness and container length strategy.
-    fn put_container_length(&mut self, length: usize) {
-        match (
-            self.config.endianness_strategy,
-            self.config.container_length_strategy,
-        ) {
-            (_, ContainerLengthStrategy::OneByte) => {
-                self.output.put_u8(length as u8);
-            }
-            (EndiannessStrategy::Big, ContainerLengthStrategy::TwoBytes) => {
-                self.output.put_u16(length as u16);
-            }
-            (EndiannessStrategy::Little, ContainerLengthStrategy::TwoBytes) => {
-                self.output.put_u16_le(length as u16);
-            }
-            (EndiannessStrategy::Big, ContainerLengthStrategy::FourBytes) => {
-                self.output.put_u32(length as u32);
-            }
-            (EndiannessStrategy::Little, ContainerLengthStrategy::FourBytes) => {
-                self.output.put_u32_le(length as u32);
-            }
-            (EndiannessStrategy::Big, ContainerLengthStrategy::EightBytes) => {
-                self.output.put_u64(length as u64);
-            }
-            (EndiannessStrategy::Little, ContainerLengthStrategy::EightBytes) => {
-                self.output.put_u64_le(length as u64);
-            }
-            (EndiannessStrategy::Big, ContainerLengthStrategy::SixteenBytes) => {
-                self.output.put_u128(length as u128);
-            }
-            (EndiannessStrategy::Little, ContainerLengthStrategy::SixteenBytes) => {
-                self.output.put_u128_le(length as u128);
-            }
-        }
-    }
-}
+use super::BinarySerializer;
 
 impl serde::ser::Serializer for &mut BinarySerializer {
     type Ok = ();
@@ -104,98 +32,55 @@ impl serde::ser::Serializer for &mut BinarySerializer {
     }
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok> {
-        self.output.put_u8(v as u8);
-        self.check_limit()
+        self.put_bool(v)
     }
 
     fn serialize_i8(self, v: i8) -> Result<Self::Ok> {
-        self.output.put_i8(v);
-        self.check_limit()
+        self.put_i8(v)
     }
 
     fn serialize_i16(self, v: i16) -> Result<Self::Ok> {
-        match self.config.endianness_strategy {
-            EndiannessStrategy::Big => self.output.put_i16(v),
-            EndiannessStrategy::Little => self.output.put_i16_le(v),
-        };
-        self.check_limit()
+        self.put_i16(v)
     }
 
     fn serialize_i32(self, v: i32) -> Result<Self::Ok> {
-        match self.config.endianness_strategy {
-            EndiannessStrategy::Big => self.output.put_i32(v),
-            EndiannessStrategy::Little => self.output.put_i32_le(v),
-        };
-        self.check_limit()
+        self.put_i32(v)
     }
 
     fn serialize_i64(self, v: i64) -> Result<Self::Ok> {
-        match self.config.endianness_strategy {
-            EndiannessStrategy::Big => self.output.put_i64(v),
-            EndiannessStrategy::Little => self.output.put_i64_le(v),
-        };
-        self.check_limit()
+        self.put_i64(v)
     }
 
     fn serialize_i128(self, v: i128) -> Result<Self::Ok> {
-        match self.config.endianness_strategy {
-            EndiannessStrategy::Big => self.output.put_i128(v),
-            EndiannessStrategy::Little => self.output.put_i128_le(v),
-        };
-        self.check_limit()
+        self.put_i128(v)
     }
 
     fn serialize_u8(self, v: u8) -> Result<Self::Ok> {
-        self.output.put_u8(v);
-        self.check_limit()
+        self.put_u8(v)
     }
 
     fn serialize_u16(self, v: u16) -> Result<Self::Ok> {
-        match self.config.endianness_strategy {
-            EndiannessStrategy::Big => self.output.put_u16(v),
-            EndiannessStrategy::Little => self.output.put_u16_le(v),
-        };
-        self.check_limit()
+        self.put_u16(v)
     }
 
     fn serialize_u32(self, v: u32) -> Result<Self::Ok> {
-        match self.config.endianness_strategy {
-            EndiannessStrategy::Big => self.output.put_u32(v),
-            EndiannessStrategy::Little => self.output.put_u32_le(v),
-        };
-        self.check_limit()
+        self.put_u32(v)
     }
 
     fn serialize_u64(self, v: u64) -> Result<Self::Ok> {
-        match self.config.endianness_strategy {
-            EndiannessStrategy::Big => self.output.put_u64(v),
-            EndiannessStrategy::Little => self.output.put_u64_le(v),
-        };
-        self.check_limit()
+        self.put_u64(v)
     }
 
     fn serialize_u128(self, v: u128) -> Result<Self::Ok> {
-        match self.config.endianness_strategy {
-            EndiannessStrategy::Big => self.output.put_u128(v),
-            EndiannessStrategy::Little => self.output.put_u128_le(v),
-        };
-        self.check_limit()
+        self.put_u128(v)
     }
 
     fn serialize_f32(self, v: f32) -> Result<Self::Ok> {
-        match self.config.endianness_strategy {
-            EndiannessStrategy::Big => self.output.put_f32(v),
-            EndiannessStrategy::Little => self.output.put_f32_le(v),
-        };
-        self.check_limit()
+        self.put_f32(v)
     }
 
     fn serialize_f64(self, v: f64) -> Result<Self::Ok> {
-        match self.config.endianness_strategy {
-            EndiannessStrategy::Big => self.output.put_f64(v),
-            EndiannessStrategy::Little => self.output.put_f64_le(v),
-        };
-        self.check_limit()
+        self.put_f64(v)
     }
 
     fn serialize_char(self, v: char) -> Result<Self::Ok> {
@@ -204,14 +89,11 @@ impl serde::ser::Serializer for &mut BinarySerializer {
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok> {
-        self.put_container_length(v.len());
-        self.output.put_slice(v.as_bytes());
-        self.check_limit()
+        self.put_str(v)
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok> {
-        self.output.put_slice(v);
-        self.check_limit()
+        self.put_bytes(v)
     }
 
     fn serialize_none(self) -> Result<Self::Ok> {
