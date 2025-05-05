@@ -1,0 +1,16 @@
+[package]
+name = "binary_plz"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "binary_plz"
+path = "src/main.rs"
+
+[lib]
+name = "binary_plz"
+path = "src/lib.rs"
+
+[dependencies]
+bytes = "1.10.1"
+serde = { version = "1.0.219", features = ["derive"] }
