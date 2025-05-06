@@ -1,9 +1,7 @@
 pub mod config;
 pub mod error;
-
-mod parser;
-mod parser_helper;
-mod serializer;
+pub mod parser;
+pub mod serializer;
 
 use crate::error::Result;
 use bytes::BytesMut;
