@@ -1,5 +1,7 @@
-pub mod bin_parse;
-pub mod serde_impl;
+mod bin_parse;
+mod serde_impl;
+
+pub use bin_parse::BinaryParse;
 
 use bytes::Buf;
 

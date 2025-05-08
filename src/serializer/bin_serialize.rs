@@ -1,6 +1,14 @@
 use super::BinarySerializer;
 use crate::error::Result;
 
+#[inline(always)]
+pub fn binary_serialize<T>(value: &T, serializer: &mut BinarySerializer) -> Result<()>
+where
+    T: BinarySerialize,
+{
+    value.binary_serialize(serializer)
+}
+
 pub trait BinarySerialize {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()>;
 }

@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod serializer_little_endian_tagged_optional {
-    use binary_plz::serde_to_bytes;
+    use binja::serde_to_bytes;
     use serde::Serialize;
 
     #[test]
@@ -248,7 +248,7 @@ mod serializer_little_endian_tagged_optional {
 #[cfg(test)]
 mod serializer_big_endian_untagged_optional {
 
-    use binary_plz::{
+    use binja::{
         config::{Config, EndiannessStrategy, OptionalStrategy},
         error::Result,
         serde_to_bytes_with_config,

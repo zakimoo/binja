@@ -1,7 +1,8 @@
-pub mod bin_serialize;
-pub mod serde_impl;
+mod bin_serialize;
+mod serde_impl;
 
-use bin_serialize::BinarySerialize;
+pub use bin_serialize::{BinarySerialize, binary_serialize};
+
 use bytes::{BufMut, BytesMut};
 
 use crate::{

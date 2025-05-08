@@ -1,14 +1,10 @@
 use super::BinaryParser;
 use crate::{config::OptionalStrategy, error::Result};
-pub trait BinaryParse {
-    fn binary_parse(parser: &mut BinaryParser) -> Result<Self>
-    where
-        Self: Sized;
 
-    fn binary_parse_mut(&mut self, parser: &mut BinaryParser) -> Result<()>
-    where
-        Self: Sized,
-    {
+pub trait BinaryParse: Sized {
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self>;
+
+    fn binary_parse_mut(&mut self, parser: &mut BinaryParser) -> Result<()> {
         *self = Self::binary_parse(parser)?;
         Ok(())
     }

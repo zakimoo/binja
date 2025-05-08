@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod parser_little_endian_tagged_optional {
-    use binary_plz::serde_from_bytes;
+    use binja::serde_from_bytes;
     use serde::Deserialize;
 
     #[test]
@@ -245,7 +245,7 @@ mod parser_little_endian_tagged_optional {
 #[cfg(test)]
 mod parser_big_endian_untagged_optional {
 
-    use binary_plz::{
+    use binja::{
         config::{Config, EndiannessStrategy, OptionalStrategy},
         error::Result,
         serde_from_bytes_with_config,

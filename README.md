@@ -3,3 +3,5 @@
 A simple and efficient binary serializer and deserializer for Rust.
 
 ## Configuration
+
+## Specification

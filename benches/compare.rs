@@ -1,7 +1,7 @@
-use binary_plz::{
+use binja::{
     error::Result,
     serde_to_bytes,
-    serializer::{BinarySerializer, bin_serialize::BinarySerialize},
+    serializer::{BinarySerialize, BinarySerializer},
     to_bytes,
 };
 use criterion::{Criterion, criterion_group, criterion_main};

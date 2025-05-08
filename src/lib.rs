@@ -6,9 +6,9 @@ pub mod serializer;
 use crate::error::Result;
 use bytes::BytesMut;
 use config::Config;
-use parser::{BinaryParser, bin_parse::BinaryParse};
+use parser::{BinaryParse, BinaryParser};
 use serde::{Deserialize, Serialize};
-use serializer::{BinarySerializer, bin_serialize::BinarySerialize};
+use serializer::{BinarySerialize, BinarySerializer};
 
 /// Serializes a given value into a binary format using the default configuration.
 ///
