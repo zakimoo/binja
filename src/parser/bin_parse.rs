@@ -6,6 +6,12 @@ pub trait BinaryParse {
         Self: Sized;
 }
 
+impl BinaryParse for () {
+    fn binary_parse(_parser: &mut BinaryParser) -> Result<Self> {
+        Ok(())
+    }
+}
+
 impl BinaryParse for bool {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
         parser.parse_bool()

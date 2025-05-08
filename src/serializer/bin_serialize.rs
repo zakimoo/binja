@@ -5,6 +5,12 @@ pub trait BinarySerialize {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()>;
 }
 
+impl BinarySerialize for () {
+    fn binary_serialize(&self, _serializer: &mut BinarySerializer) -> Result<()> {
+        Ok(())
+    }
+}
+
 impl BinarySerialize for bool {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
         serializer.put_bool(*self)
