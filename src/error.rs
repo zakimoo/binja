@@ -1,5 +1,6 @@
 use std::fmt::{self, Display};
 
+use bytes::TryGetError;
 use serde::{de, ser};
 
 // A type alias for Result that uses the custom Error enum
@@ -86,6 +87,15 @@ impl Display for Error {
         match self {
             Error::Message(msg) => formatter.write_str(msg),
             _ => formatter.write_str("Unknown error"),
+        }
+    }
+}
+
+impl From<TryGetError> for Error {
+    fn from(value: TryGetError) -> Self {
+        Error::NoEnoughData {
+            expected: value.requested,
+            available: value.available,
         }
     }
 }

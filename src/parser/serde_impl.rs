@@ -1,3 +1,4 @@
+use serde::de::value::U8Deserializer;
 use serde::de::{self, DeserializeSeed, IntoDeserializer, Visitor};
 use serde::{Deserialize, Deserializer};
 
@@ -31,84 +32,84 @@ impl<'de> de::Deserializer<'de> for &mut BinaryParser<'de> {
     where
         V: Visitor<'de>,
     {
-        visitor.visit_i8(self.parse_number::<i8>()?)
+        visitor.visit_i8(self.parse_i8()?)
     }
 
     fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_i16(self.parse_number::<i16>()?)
+        visitor.visit_i16(self.parse_i16()?)
     }
 
     fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_i32(self.parse_number::<i32>()?)
+        visitor.visit_i32(self.parse_i32()?)
     }
 
     fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_i64(self.parse_number::<i64>()?)
+        visitor.visit_i64(self.parse_i64()?)
     }
 
     fn deserialize_i128<V>(self, visitor: V) -> std::result::Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_i128(self.parse_number::<i128>()?)
+        visitor.visit_i128(self.parse_i128()?)
     }
 
     fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_u8(self.parse_number::<u8>()?)
+        visitor.visit_u8(self.parse_u8()?)
     }
 
     fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_u16(self.parse_number::<u16>()?)
+        visitor.visit_u16(self.parse_u16()?)
     }
 
     fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_u32(self.parse_number::<u32>()?)
+        visitor.visit_u32(self.parse_u32()?)
     }
 
     fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_u64(self.parse_number::<u64>()?)
+        visitor.visit_u64(self.parse_u64()?)
     }
 
     fn deserialize_u128<V>(self, visitor: V) -> std::result::Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_u128(self.parse_number::<u128>()?)
+        visitor.visit_u128(self.parse_u128()?)
     }
 
     fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_f32(self.parse_number::<f32>()?)
+        visitor.visit_f32(self.parse_f32()?)
     }
 
     fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_f64(self.parse_number::<f64>()?)
+        visitor.visit_f64(self.parse_f64()?)
     }
 
     fn deserialize_char<V>(self, visitor: V) -> Result<V::Value>
@@ -188,7 +189,7 @@ impl<'de> de::Deserializer<'de> for &mut BinaryParser<'de> {
     where
         V: Visitor<'de>,
     {
-        let len = self.parse_number::<u32>()? as usize;
+        let len = self.parse_container_size()?;
         visitor.visit_seq(SeqAccess::new(self, len))
     }
 
@@ -215,7 +216,7 @@ impl<'de> de::Deserializer<'de> for &mut BinaryParser<'de> {
     where
         V: Visitor<'de>,
     {
-        let len = self.parse_number::<u32>()? as usize;
+        let len = self.parse_container_size()?;
         visitor.visit_map(MapAccess::new(self, len))
     }
 
@@ -383,8 +384,8 @@ impl<'de> serde::de::EnumAccess<'de> for EnumAccess<'_, 'de> {
     where
         V: DeserializeSeed<'de>,
     {
-        let idx: u8 = self.de.parse_number::<u8>()?;
-        let val = seed.deserialize(idx.into_deserializer())?;
+        let idx = self.de.parse_u8()?;
+        let val = seed.deserialize::<U8Deserializer<Error>>(idx.into_deserializer())?;
         Ok((val, self))
     }
 

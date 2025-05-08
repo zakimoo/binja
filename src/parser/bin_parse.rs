@@ -14,71 +14,71 @@ impl BinaryParse for bool {
 
 impl BinaryParse for i8 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_number::<i8>()
+        parser.parse_i8()
     }
 }
 
 impl BinaryParse for i16 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_number::<i16>()
+        parser.parse_i16()
     }
 }
 
 impl BinaryParse for i32 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_number::<i32>()
+        parser.parse_i32()
     }
 }
 
 impl BinaryParse for i64 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_number::<i64>()
+        parser.parse_i64()
     }
 }
 
 impl BinaryParse for i128 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_number::<i128>()
+        parser.parse_i128()
     }
 }
 
 impl BinaryParse for u8 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_number::<u8>()
+        parser.parse_u8()
     }
 }
 
 impl BinaryParse for u16 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_number::<u16>()
+        parser.parse_u16()
     }
 }
 
 impl BinaryParse for u32 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_number::<u32>()
+        parser.parse_u32()
     }
 }
 
 impl BinaryParse for u64 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_number::<u64>()
+        parser.parse_u64()
     }
 }
 impl BinaryParse for u128 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_number::<u128>()
+        parser.parse_u128()
     }
 }
 impl BinaryParse for f32 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_number::<f32>()
+        parser.parse_f32()
     }
 }
 
 impl BinaryParse for f64 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_number::<f64>()
+        parser.parse_f64()
     }
 }
 
