@@ -8,7 +8,7 @@ use bytes::BytesMut;
 use config::Config;
 use parser::BinaryParser;
 use serde::{Deserialize, Serialize};
-use serializer::BinarySerializer;
+use serializer::{BinarySerializer, bin_serialize::BinarySerialize};
 
 /// Serializes a given value into a binary format using the default configuration.
 ///
@@ -44,9 +44,16 @@ use serializer::BinarySerializer;
 /// let serialized = to_bytes(&value).unwrap().to_vec();
 /// assert_eq!(serialized, vec![0x2A, 0x0, 0x0, 0x0, 0x1, 0x7, 0x0, 0x0, 0x0]);
 /// ```
-pub fn to_bytes<T>(value: &T) -> Result<BytesMut>
+pub fn serde_to_bytes<T>(value: &T) -> Result<BytesMut>
 where
     T: Serialize,
+{
+    serde_to_bytes_with_config(value, Config::default())
+}
+
+pub fn to_bytes<T>(value: &T) -> Result<BytesMut>
+where
+    T: BinarySerialize,
 {
     to_bytes_with_config(value, Config::default())
 }
@@ -87,12 +94,21 @@ where
 /// let serialized = to_bytes_with_config(&value, config).unwrap().to_vec();
 /// assert_eq!(serialized, vec![0x00, 0x00, 0x00, 0x2A, 0x01, 0x00, 0x00, 0x00, 0x07]);
 /// ```
-pub fn to_bytes_with_config<T>(value: &T, config: Config) -> Result<BytesMut>
+pub fn serde_to_bytes_with_config<T>(value: &T, config: Config) -> Result<BytesMut>
 where
     T: Serialize,
 {
     let mut serializer = BinarySerializer::new(config);
     value.serialize(&mut serializer)?;
+    Ok(serializer.output())
+}
+
+pub fn to_bytes_with_config<T>(value: &T, config: Config) -> Result<BytesMut>
+where
+    T: BinarySerialize,
+{
+    let mut serializer = BinarySerializer::new(config);
+    value.binary_serialize(&mut serializer)?;
     Ok(serializer.output())
 }
 
@@ -132,11 +148,11 @@ where
 ///     }
 /// );
 /// ```
-pub fn from_bytes<'a, T>(bytes: &'a [u8]) -> Result<T>
+pub fn serde_from_bytes<'a, T>(bytes: &'a [u8]) -> Result<T>
 where
     T: Deserialize<'a>,
 {
-    from_bytes_with_config(bytes, Config::default())
+    serde_from_bytes_with_config(bytes, Config::default())
 }
 
 /// Deserializes a binary slice into a value of type `T` using a custom configuration.
@@ -177,7 +193,7 @@ where
 ///     }
 /// );
 /// ```
-pub fn from_bytes_with_config<'a, T>(bytes: &'a [u8], config: Config) -> Result<T>
+pub fn serde_from_bytes_with_config<'a, T>(bytes: &'a [u8], config: Config) -> Result<T>
 where
     T: Deserialize<'a>,
 {
