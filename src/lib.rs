@@ -6,7 +6,7 @@ pub mod serializer;
 use crate::error::Result;
 use bytes::BytesMut;
 use config::Config;
-use parser::BinaryParser;
+use parser::{BinaryParser, bin_parse::BinaryParse};
 use serde::{Deserialize, Serialize};
 use serializer::{BinarySerializer, bin_serialize::BinarySerialize};
 
@@ -155,6 +155,13 @@ where
     serde_from_bytes_with_config(bytes, Config::default())
 }
 
+pub fn from_bytes<'a, T>(bytes: &'a [u8]) -> Result<T>
+where
+    T: BinaryParse,
+{
+    from_bytes_with_config(bytes, Config::default())
+}
+
 /// Deserializes a binary slice into a value of type `T` using a custom configuration.
 ///
 /// # Parameters
@@ -200,4 +207,13 @@ where
     let mut deserializer = BinaryParser::new(bytes, config);
 
     T::deserialize(&mut deserializer)
+}
+
+pub fn from_bytes_with_config<'a, T>(bytes: &'a [u8], config: Config) -> Result<T>
+where
+    T: BinaryParse,
+{
+    let mut deserializer = BinaryParser::new(bytes, config);
+
+    T::binary_parse(&mut deserializer)
 }

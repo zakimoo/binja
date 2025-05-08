@@ -4,6 +4,14 @@ pub trait BinaryParse {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self>
     where
         Self: Sized;
+
+    fn binary_parse_mut(&mut self, parser: &mut BinaryParser) -> Result<()>
+    where
+        Self: Sized,
+    {
+        *self = Self::binary_parse(parser)?;
+        Ok(())
+    }
 }
 
 impl BinaryParse for () {

@@ -1,14 +1,15 @@
 use binary_plz::{
-    config::{Config, ContainerLengthStrategy, EndiannessStrategy, OptionalStrategy},
+    config::Config,
     error::Result,
+    from_bytes,
     parser::{BinaryParser, bin_parse::BinaryParse},
-    serde_from_bytes_with_config, serde_to_bytes,
+    serde_from_bytes, serde_to_bytes,
     serializer::{BinarySerializer, bin_serialize::BinarySerialize},
 };
 use serde::{Deserialize, Serialize};
 
 // i want to test the to bytes function and i need to test all rust types unit struct enum unit struct optional ....
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 struct OtherStruct {
     a: u8,
     b: i16,
@@ -16,8 +17,8 @@ struct OtherStruct {
 
 impl BinarySerialize for OtherStruct {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
-        serializer.put(&self.a)?;
-        serializer.put(&self.b)
+        self.a.binary_serialize(serializer)?;
+        self.b.binary_serialize(serializer)
     }
 }
 
@@ -29,7 +30,7 @@ impl BinaryParse for OtherStruct {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 struct TestStruct {
     a: u8,
     b: i16,
@@ -42,13 +43,13 @@ struct TestStruct {
 
 impl BinarySerialize for TestStruct {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
-        serializer.put(&self.a)?;
-        serializer.put(&self.b)?;
-        serializer.put(&self.c)?;
-        serializer.put(&self.d)?;
-        serializer.put(&self.e)?;
-        serializer.put(&self.f)?;
-        serializer.put(&self.h)
+        self.a.binary_serialize(serializer)?;
+        self.b.binary_serialize(serializer)?;
+        self.c.binary_serialize(serializer)?;
+        self.d.binary_serialize(serializer)?;
+        self.e.binary_serialize(serializer)?;
+        self.f.binary_serialize(serializer)?;
+        self.h.binary_serialize(serializer)
     }
 }
 
@@ -92,4 +93,10 @@ fn main() {
 
     println!("Serialized bytes  : {:?}", bytes.to_vec());
     println!("Serialized bytes 2: {:?}", bytes_2.to_vec());
+
+    let parsed_struct: TestStruct = from_bytes(&bytes).unwrap();
+    let parsed_struct_2: TestStruct = serde_from_bytes(&bytes_2).unwrap();
+
+    println!("Parsed struct     : {:?}", parsed_struct);
+    println!("Parsed struct 2   : {:?}", parsed_struct_2);
 }
