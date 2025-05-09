@@ -1,4 +1,4 @@
-use crate::attribute::{ContainerAttributes, FieldAttributes};
+use crate::attribute::ContainerAttributes;
 use virtue::prelude::*;
 
 const TUPLE_FIELD_PREFIX: &str = "field_";

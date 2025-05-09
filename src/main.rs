@@ -17,7 +17,7 @@ struct TestStruct {
     b: i16,
     c: String,
     d: OtherStruct<u32>,
-    // e: Option<u32>,
+    e: Option<u32>,
     // f: Option<String>,
     // h: OtherStruct,
 }
@@ -33,7 +33,7 @@ fn main() {
             c: "World".to_string(),
             d: Some(4),
         },
-        // e: Some(4),
+        e: Some(4),
         // f: Some("World".to_string()),
         // h: OtherStruct { a: 5, b: -6 },
     };

@@ -1,6 +1,4 @@
-use std::any::Any;
-
-use crate::attribute::{ContainerAttributes, FieldAttributes};
+use crate::attribute::ContainerAttributes;
 use virtue::prelude::*;
 
 pub(crate) struct DeriveStruct {
