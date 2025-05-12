@@ -2,75 +2,95 @@ mod attribute;
 mod derive_enum;
 mod derive_struct;
 
-use attribute::ContainerAttributes;
-use virtue::prelude::*;
+use derive_enum::BinjaEnumOpts;
+use derive_struct::BinjaStructOpts;
+
+use darling::FromDeriveInput;
+use proc_macro::TokenStream;
+use syn::{DeriveInput, parse_macro_input};
 
 #[proc_macro_derive(BinarySerialize, attributes(binja))]
-pub fn derive_your_derive(input: TokenStream) -> TokenStream {
-    derive_your_derive_inner(input).unwrap_or_else(|error| error.into_token_stream())
-}
+pub fn derive_binary_serialize(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
 
-fn derive_your_derive_inner(input: TokenStream) -> Result<TokenStream> {
-    // Parse the struct or enum you want to implement a derive for
-    let parse = Parse::new(input)?;
-    // Get a reference to the generator
-    let (mut generator, attr, body) = parse.into_generator();
+    match &input.data {
+        syn::Data::Struct(data) => {
+            let container = match BinjaStructOpts::from_derive_input(&input) {
+                Ok(c) => c,
+                Err(e) => return e.write_errors().into(),
+            };
 
-    let attributes = attr
-        .get_attribute::<ContainerAttributes>()?
-        .unwrap_or_default();
-
-    match body {
-        Body::Struct(body) => {
-            derive_struct::DeriveStruct {
-                fields: body.fields,
-                attributes,
-            }
-            .generate_binary_serialize(&mut generator)?;
+            container.generate_binary_serialize(data)
         }
-        Body::Enum(body) => {
-            derive_enum::DeriveEnum {
-                variants: body.variants,
-                attributes,
-            }
-            .generate_binary_serialize(&mut generator)?;
+        syn::Data::Enum(data) => {
+            let container = match BinjaEnumOpts::from_derive_input(&input) {
+                Ok(c) => c,
+                Err(e) => return e.write_errors().into(),
+            };
+            container.generate_binary_serialize(data)
         }
+        syn::Data::Union(_) => todo!(),
     }
-    generator.export_to_file("binja", "BinarySerialize");
-    generator.finish()
 }
 
-#[proc_macro_derive(BinaryParse, attributes(some, attributes, go, here))]
+#[proc_macro_derive(BinaryParse, attributes(binja))]
 pub fn derive_binary_parse(input: TokenStream) -> TokenStream {
-    derive_binary_parse_inner(input).unwrap_or_else(|error| error.into_token_stream())
-}
+    let input = parse_macro_input!(input as DeriveInput);
 
-fn derive_binary_parse_inner(input: TokenStream) -> Result<TokenStream> {
-    // Parse the struct or enum you want to implement a derive for
-    let parse = Parse::new(input)?;
-    // Get a reference to the generator
-    let (mut generator, attr, body) = parse.into_generator();
+    match &input.data {
+        syn::Data::Struct(data) => {
+            let container = match BinjaStructOpts::from_derive_input(&input) {
+                Ok(c) => c,
+                Err(e) => return e.write_errors().into(),
+            };
 
-    let attributes = attr
-        .get_attribute::<ContainerAttributes>()?
-        .unwrap_or_default();
-
-    match body {
-        Body::Struct(body) => {
-            derive_struct::DeriveStruct {
-                fields: body.fields,
-                attributes,
-            }
-            .generate_binary_parse(&mut generator)?;
+            container.generate_binary_parse(data)
         }
-        Body::Enum(body) => {
-            derive_enum::DeriveEnum {
-                variants: body.variants,
-                attributes,
-            }
-            .generate_binary_parse(&mut generator)?;
+        syn::Data::Enum(data) => {
+            // let container = match BinjaEnumOpts::from_derive_input(&input) {
+            //     Ok(c) => c,
+            //     Err(e) => return e.write_errors().into(),
+            // };
+            // container.generate_binary_parse(data)
+
+            todo!()
         }
+        syn::Data::Union(_) => todo!(),
     }
-    generator.export_to_file("binja", "BinaryParse");
-    generator.finish()
 }
+
+// let fields = if let syn::Data::Struct(syn::DataStruct {
+//     fields: syn::Fields::Named(ref fields),
+//     ..
+// }) = input.data
+// {
+//     fields
+// } else {
+//     return syn::Error::new_spanned(input, "Only named fields are supported")
+//         .to_compile_error()
+//         .into();
+// };
+
+// let serialize_fields = fields.named.iter().filter_map(|f| {
+//     let opts = BinjaFieldOpts::from_field(f).ok()?;
+
+//     let ident = &f.ident;
+//     if opts.skip.is_some() {
+//         None
+//     } else {
+//         Some(quote! {
+//             self.#ident.binary_serialize(serializer)?;
+//         })
+//     }
+// });
+
+// let name = &container.ident;
+
+// TokenStream::from(quote! {
+//     impl binja::serializer::BinarySerialize for #name {
+//         fn binary_serialize(&self, serializer: &mut binja::serializer::BinarySerializer) -> binja::error::Result<()> {
+//             #(#serialize_fields)*
+//             Ok(())
+//         }
+//     }
+// })

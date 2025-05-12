@@ -1,106 +1,172 @@
-use crate::attribute::ContainerAttributes;
-use virtue::prelude::*;
+use darling::{FromDeriveInput, FromField};
+use proc_macro::TokenStream;
+use quote::quote;
+use syn::parse_quote;
 
-pub(crate) struct DeriveStruct {
-    pub fields: Option<Fields>,
-    pub attributes: ContainerAttributes,
+use crate::attribute::BinjaFieldOpts;
+
+#[derive(Debug, FromDeriveInput)]
+#[darling(attributes(binja), supports(struct_any))]
+pub struct BinjaStructOpts {
+    pub ident: syn::Ident,
+    pub generics: syn::Generics,
 }
 
-impl DeriveStruct {
-    pub fn generate_binary_serialize(self, generator: &mut Generator) -> Result<()> {
-        let crate_name = &self.attributes.crate_name;
+impl BinjaStructOpts {
+    pub fn generate_binary_serialize(&self, data: &syn::DataStruct) -> TokenStream {
+        let name = &self.ident;
+        let generics = &self.generics;
+        let mut gen_clone = generics.clone();
 
-        generator
-            .impl_for(format!("{}::serializer::BinarySerialize", crate_name))
-            .modify_generic_constraints(|generics, where_constraints| {
-                for g in generics.iter_generics() {
-                    where_constraints
-                        .push_constraint(g, format!("{}::serializer::BinarySerialize", crate_name))
-                        .unwrap();
-                }
-                Ok(())
-            })?
-            .generate_fn("binary_serialize")
-            .with_self_arg(virtue::generate::FnSelfArg::RefSelf)
-            .with_arg(
-                "serializer",
-                format!("&mut {}::serializer::BinarySerializer", crate_name),
-            )
-            .with_return_type(format!("{}::error::Result<()>", crate_name))
-            .body(|fn_body| {
-                if let Some(fields) = self.fields.as_ref() {
-                    for field in fields.names() {
-                        // TODO: handle attributes like skip, default, etc.
-                        // let _attributes = field
-                        //     .attributes()
-                        //     .get_attribute::<FieldAttributes>()?
-                        //     .unwrap_or_default();
+        // Add trait bounds to each type parameter
+        let where_clause = gen_clone.make_where_clause();
+        for param in generics.type_params() {
+            let ident = &param.ident;
+            where_clause.predicates.push(parse_quote! {
+                #ident: ::binja::serializer::BinarySerialize
+            });
+        }
 
-                        fn_body.push_parsed(format!(
-                            "{}::serializer::binary_serialize(&self.{}, serializer)?;",
-                            crate_name, field
-                        ))?;
+        let fields_token =
+            match &data.fields {
+                // struct Example { field: String }
+                syn::Fields::Named(fields_named) => {
+                    let serialize_fields = fields_named.named.iter().filter_map(|f| {
+                        // Check if the field has attributes
+                        let opts = BinjaFieldOpts::from_field(f).ok()?;
+                        let ident = &f.ident;
+
+                        // skip file
+                        if opts.skip.is_some() {
+                            None
+                        } else {
+                            Some(quote! {
+                                ::binja::serializer::binary_serialize(&self.#ident, serializer)?;
+                            })
+                        }
+                    });
+
+                    quote! {
+                        #(#serialize_fields)*
                     }
                 }
 
-                fn_body.push_parsed("Ok(())")?;
-                Ok(())
-            })?;
+                // struct Example(String) , struct Example(String, String)
+                syn::Fields::Unnamed(fields_unnamed) => {
+                    let serialize_fields = fields_unnamed.unnamed.iter().enumerate().filter_map(
+                        |(i, f)| {
+                            let opts = BinjaFieldOpts::from_field(f).ok()?;
+                            let index = syn::Index::from(i);
+                            if opts.skip.is_some() {
+                                None
+                            } else {
+                                Some(quote! {
+                                ::binja::serializer::binary_serialize(&self.#index, serializer)?;
+                                })
+                            }
+                        },
+                    );
 
-        Ok(())
+                    quote! {
+                        #(#serialize_fields)*
+                    }
+                }
+
+                // struct Example;
+                syn::Fields::Unit => {
+                    quote! {}
+                }
+            };
+
+        TokenStream::from(quote! {
+            impl #generics binja::serializer::BinarySerialize for #name #generics #where_clause{
+                fn binary_serialize(&self, serializer: &mut ::binja::serializer::BinarySerializer) -> binja::error::Result<()> {
+                    #fields_token
+                    Ok(())
+                }
+            }
+        })
     }
 
-    pub fn generate_binary_parse(self, generator: &mut Generator) -> Result<()> {
-        let crate_name = &self.attributes.crate_name;
+    pub fn generate_binary_parse(&self, data: &syn::DataStruct) -> TokenStream {
+        let name = &self.ident;
+        let generics = &self.generics;
+        let mut gen_clone = generics.clone();
 
-        generator
-            .impl_for(format!("{}::parser::BinaryParse", crate_name))
-            .modify_generic_constraints(|generics, where_constraints| {
-                for g in generics.iter_generics() {
-                    where_constraints
-                        .push_constraint(g, format!("{}::parser::BinaryParse", crate_name))
-                        .unwrap();
+        // Add trait bounds to each type parameter
+        let where_clause = gen_clone.make_where_clause();
+        for param in generics.type_params() {
+            let ident = &param.ident;
+            where_clause.predicates.push(parse_quote! {
+                #ident: ::binja::parser::BinaryParse
+            });
+        }
+
+        let fields_token = match &data.fields {
+            // struct Example { field: String }
+            syn::Fields::Named(fields_named) => {
+                let parse_fields = fields_named.named.iter().filter_map(|f| {
+                    // Check if the field has attributes
+                    let opts = BinjaFieldOpts::from_field(f).ok()?;
+                    let ident = &f.ident;
+
+                    // skip file
+                    if opts.skip.is_some() {
+                        Some(quote! {
+                            #ident: Default::default(),
+                        })
+                    } else {
+                        Some(quote! {
+                            #ident: ::binja::parser::binary_parse(parser)?,
+                        })
+                    }
+                });
+
+                quote! {
+                    #(#parse_fields)*
                 }
-                Ok(())
-            })?
-            .generate_fn("binary_parse")
-            .with_arg(
-                "parser",
-                format!("&mut {}::parser::BinaryParser", crate_name),
-            )
-            .with_return_type(format!("{}::error::Result<Self>", crate_name))
-            .body(|fn_body| {
-                // Ok(Self {
-                fn_body.push_parsed("core::result::Result::Ok")?;
-                fn_body.group(Delimiter::Parenthesis, |ok_group| {
-                    ok_group.ident_str("Self");
-                    ok_group.group(Delimiter::Brace, |struct_body| {
-                        // Fields
-                        // {
-                        //      a: binja::parser::binary_parse(parser)?,
-                        //      b: binja::parser::binary_parse(parser)?,
-                        //      ...
-                        // }
-                        if let Some(fields) = self.fields.as_ref() {
-                            for field in fields.names() {
-                                // TODO: handle attributes like skip, default, etc.
-                                // let _attributes = field
-                                //     .attributes()
-                                //     .get_attribute::<FieldAttributes>()?
-                                //     .unwrap_or_default();
+            }
 
-                                struct_body.push_parsed(format!(
-                                    "{1}: {}::parser::BinaryParse::binary_parse(parser)?,",
-                                    crate_name, field
-                                ))?;
+            // struct Example(String) , struct Example(String, String)
+            syn::Fields::Unnamed(fields_unnamed) => {
+                let parse_fields =
+                    fields_unnamed
+                        .unnamed
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(i, f)| {
+                            let opts = BinjaFieldOpts::from_field(f).ok()?;
+                            let index = syn::Index::from(i);
+                            if opts.skip.is_some() {
+                                Some(quote! {
+                                #index : Default::default(),
+                                 })
+                            } else {
+                                Some(quote! {
+                                #index : ::binja::parser::binary_parse(parser)?,
+                                 })
                             }
-                        }
-                        Ok(())
-                    })?;
-                    Ok(())
-                })?;
-                Ok(())
-            })?;
-        Ok(())
+                        });
+
+                quote! {
+                    #(#parse_fields)*
+                }
+            }
+
+            // struct Example;
+            syn::Fields::Unit => {
+                quote! {}
+            }
+        };
+
+        TokenStream::from(quote! {
+            impl #generics binja::parser::BinaryParse for #name #generics #where_clause{
+                fn binary_parse(parser: &mut ::binja::parser::BinaryParser) -> binja::error::Result<Self> {
+                    Ok(Self{
+                        #fields_token
+                    })
+                }
+            }
+        })
     }
 }
