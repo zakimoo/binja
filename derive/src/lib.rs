@@ -2,8 +2,9 @@ mod attribute;
 mod derive_enum;
 mod derive_struct;
 
-use derive_enum::BinjaEnumOpts;
-use derive_struct::BinjaStructOpts;
+use attribute::{EnumAttributes, StructAttributes};
+use derive_enum::generate_enum_binary_serialize;
+use derive_struct::{generate_struct_binary_parse, generate_struct_binary_serialize};
 
 use darling::FromDeriveInput;
 use proc_macro::TokenStream;
@@ -15,19 +16,19 @@ pub fn derive_binary_serialize(input: TokenStream) -> TokenStream {
 
     match &input.data {
         syn::Data::Struct(data) => {
-            let container = match BinjaStructOpts::from_derive_input(&input) {
+            let attr = match StructAttributes::from_derive_input(&input) {
                 Ok(c) => c,
                 Err(e) => return e.write_errors().into(),
             };
 
-            container.generate_binary_serialize(data)
+            generate_struct_binary_serialize(attr, data)
         }
         syn::Data::Enum(data) => {
-            let container = match BinjaEnumOpts::from_derive_input(&input) {
+            let attr = match EnumAttributes::from_derive_input(&input) {
                 Ok(c) => c,
                 Err(e) => return e.write_errors().into(),
             };
-            container.generate_binary_serialize(data)
+            generate_enum_binary_serialize(attr, data)
         }
         syn::Data::Union(_) => todo!(),
     }
@@ -39,20 +40,14 @@ pub fn derive_binary_parse(input: TokenStream) -> TokenStream {
 
     match &input.data {
         syn::Data::Struct(data) => {
-            let container = match BinjaStructOpts::from_derive_input(&input) {
+            let attr = match StructAttributes::from_derive_input(&input) {
                 Ok(c) => c,
                 Err(e) => return e.write_errors().into(),
             };
 
-            container.generate_binary_parse(data)
+            generate_struct_binary_parse(attr, data)
         }
         syn::Data::Enum(data) => {
-            // let container = match BinjaEnumOpts::from_derive_input(&input) {
-            //     Ok(c) => c,
-            //     Err(e) => return e.write_errors().into(),
-            // };
-            // container.generate_binary_parse(data)
-
             todo!()
         }
         syn::Data::Union(_) => todo!(),
