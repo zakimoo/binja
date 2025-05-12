@@ -143,3 +143,15 @@ where
         Ok(())
     }
 }
+
+impl<T, const N: usize> BinarySerialize for [T; N]
+where
+    T: BinarySerialize,
+{
+    fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
+        for item in self {
+            item.binary_serialize(serializer)?;
+        }
+        Ok(())
+    }
+}

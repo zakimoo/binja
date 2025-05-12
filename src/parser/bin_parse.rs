@@ -1,6 +1,14 @@
 use super::BinaryParser;
 use crate::{config::OptionalStrategy, error::Result};
 
+#[inline(always)]
+pub fn binary_parse<T>(parser: &mut BinaryParser) -> Result<T>
+where
+    T: BinaryParse,
+{
+    T::binary_parse(parser)
+}
+
 pub trait BinaryParse: Sized {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self>;
 
@@ -18,89 +26,89 @@ impl BinaryParse for () {
 
 impl BinaryParse for bool {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_bool()
+        parser.bool()
     }
 }
 
 impl BinaryParse for i8 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_i8()
+        parser.i8()
     }
 }
 
 impl BinaryParse for i16 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_i16()
+        parser.i16()
     }
 }
 
 impl BinaryParse for i32 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_i32()
+        parser.i32()
     }
 }
 
 impl BinaryParse for i64 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_i64()
+        parser.i64()
     }
 }
 
 impl BinaryParse for i128 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_i128()
+        parser.i128()
     }
 }
 
 impl BinaryParse for u8 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_u8()
+        parser.u8()
     }
 }
 
 impl BinaryParse for u16 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_u16()
+        parser.u16()
     }
 }
 
 impl BinaryParse for u32 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_u32()
+        parser.u32()
     }
 }
 
 impl BinaryParse for u64 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_u64()
+        parser.u64()
     }
 }
 impl BinaryParse for u128 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_u128()
+        parser.u128()
     }
 }
 impl BinaryParse for f32 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_f32()
+        parser.f32()
     }
 }
 
 impl BinaryParse for f64 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_f64()
+        parser.f64()
     }
 }
 
 impl BinaryParse for char {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        parser.parse_char()
+        parser.char()
     }
 }
 
 impl BinaryParse for String {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
-        let str = parser.parse_string()?;
+        let str = parser.string()?;
         Ok(str.to_string())
     }
 }
@@ -113,9 +121,7 @@ where
     where
         Self: Sized,
     {
-        if matches!(parser.config.optional_strategy, OptionalStrategy::Tagged)
-            && !parser.parse_bool()?
-        {
+        if matches!(parser.config.optional_strategy, OptionalStrategy::Tagged) && !parser.bool()? {
             return Ok(None);
         }
 
@@ -140,5 +146,18 @@ where
         }
 
         Ok(vec)
+    }
+}
+
+impl<T, const N: usize> BinaryParse for [T; N]
+where
+    T: BinaryParse + Copy,
+{
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let arr = [T::binary_parse(parser)?; N];
+        Ok(arr)
     }
 }

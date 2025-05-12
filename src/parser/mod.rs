@@ -1,7 +1,7 @@
 mod bin_parse;
 mod serde_impl;
 
-pub use bin_parse::BinaryParse;
+pub use bin_parse::{BinaryParse, binary_parse};
 
 use bytes::Buf;
 
@@ -21,7 +21,7 @@ impl<'de> BinaryParser<'de> {
 }
 
 impl<'de> BinaryParser<'de> {
-    pub fn parse_bool(&mut self) -> Result<bool> {
+    pub fn bool(&mut self) -> Result<bool> {
         match self.input.try_get_u8()? {
             0 => {
                 return Ok(false);
@@ -35,11 +35,11 @@ impl<'de> BinaryParser<'de> {
         }
     }
 
-    pub fn parse_i8(&mut self) -> Result<i8> {
+    pub fn i8(&mut self) -> Result<i8> {
         Ok(self.input.try_get_i8()?)
     }
 
-    pub fn parse_i16(&mut self) -> Result<i16> {
+    pub fn i16(&mut self) -> Result<i16> {
         let value = match self.config.endianness_strategy {
             EndiannessStrategy::Little => self.input.try_get_i16_le()?,
             EndiannessStrategy::Big => self.input.try_get_i16()?,
@@ -47,7 +47,7 @@ impl<'de> BinaryParser<'de> {
         Ok(value)
     }
 
-    pub fn parse_i32(&mut self) -> Result<i32> {
+    pub fn i32(&mut self) -> Result<i32> {
         let value = match self.config.endianness_strategy {
             EndiannessStrategy::Little => self.input.try_get_i32_le()?,
             EndiannessStrategy::Big => self.input.try_get_i32()?,
@@ -55,7 +55,7 @@ impl<'de> BinaryParser<'de> {
         Ok(value)
     }
 
-    pub fn parse_i64(&mut self) -> Result<i64> {
+    pub fn i64(&mut self) -> Result<i64> {
         let value = match self.config.endianness_strategy {
             EndiannessStrategy::Little => self.input.try_get_i64_le()?,
             EndiannessStrategy::Big => self.input.try_get_i64()?,
@@ -63,7 +63,7 @@ impl<'de> BinaryParser<'de> {
         Ok(value)
     }
 
-    pub fn parse_i128(&mut self) -> Result<i128> {
+    pub fn i128(&mut self) -> Result<i128> {
         let value = match self.config.endianness_strategy {
             EndiannessStrategy::Little => self.input.try_get_i128_le()?,
             EndiannessStrategy::Big => self.input.try_get_i128()?,
@@ -71,11 +71,11 @@ impl<'de> BinaryParser<'de> {
         Ok(value)
     }
 
-    fn parse_u8(&mut self) -> Result<u8> {
+    fn u8(&mut self) -> Result<u8> {
         Ok(self.input.try_get_u8()?)
     }
 
-    pub fn parse_u16(&mut self) -> Result<u16> {
+    pub fn u16(&mut self) -> Result<u16> {
         let value = match self.config.endianness_strategy {
             EndiannessStrategy::Little => self.input.try_get_u16_le()?,
             EndiannessStrategy::Big => self.input.try_get_u16()?,
@@ -83,7 +83,7 @@ impl<'de> BinaryParser<'de> {
         Ok(value)
     }
 
-    pub fn parse_u32(&mut self) -> Result<u32> {
+    pub fn u32(&mut self) -> Result<u32> {
         let value = match self.config.endianness_strategy {
             EndiannessStrategy::Little => self.input.try_get_u32_le()?,
             EndiannessStrategy::Big => self.input.try_get_u32()?,
@@ -91,7 +91,7 @@ impl<'de> BinaryParser<'de> {
         Ok(value)
     }
 
-    pub fn parse_u64(&mut self) -> Result<u64> {
+    pub fn u64(&mut self) -> Result<u64> {
         let value = match self.config.endianness_strategy {
             EndiannessStrategy::Little => self.input.try_get_u64_le()?,
             EndiannessStrategy::Big => self.input.try_get_u64()?,
@@ -99,7 +99,7 @@ impl<'de> BinaryParser<'de> {
         Ok(value)
     }
 
-    pub fn parse_u128(&mut self) -> Result<u128> {
+    pub fn u128(&mut self) -> Result<u128> {
         let value = match self.config.endianness_strategy {
             EndiannessStrategy::Little => self.input.try_get_u128_le()?,
             EndiannessStrategy::Big => self.input.try_get_u128()?,
@@ -107,7 +107,7 @@ impl<'de> BinaryParser<'de> {
         Ok(value)
     }
 
-    pub fn parse_f32(&mut self) -> Result<f32> {
+    pub fn f32(&mut self) -> Result<f32> {
         let value = match self.config.endianness_strategy {
             EndiannessStrategy::Little => self.input.try_get_f32_le()?,
             EndiannessStrategy::Big => self.input.try_get_f32()?,
@@ -115,7 +115,7 @@ impl<'de> BinaryParser<'de> {
         Ok(value)
     }
 
-    pub fn parse_f64(&mut self) -> Result<f64> {
+    pub fn f64(&mut self) -> Result<f64> {
         let value = match self.config.endianness_strategy {
             EndiannessStrategy::Little => self.input.try_get_f64_le()?,
             EndiannessStrategy::Big => self.input.try_get_f64()?,
@@ -123,7 +123,7 @@ impl<'de> BinaryParser<'de> {
         Ok(value)
     }
 
-    pub fn parse_char(&mut self) -> Result<char> {
+    pub fn char(&mut self) -> Result<char> {
         if self.input.is_empty() {
             return Err(Error::NoEnoughData {
                 expected: 1,
@@ -147,7 +147,7 @@ impl<'de> BinaryParser<'de> {
         Ok(result)
     }
 
-    pub fn parse_string(&mut self) -> Result<&'de str> {
+    pub fn string(&mut self) -> Result<&'de str> {
         let len = self.parse_container_size()?;
 
         if self.input.len() < len {
@@ -167,7 +167,7 @@ impl<'de> BinaryParser<'de> {
         Ok(value)
     }
 
-    pub fn parse_bytes(&mut self, size: usize) -> Result<&'de [u8]> {
+    pub fn bytes(&mut self, size: usize) -> Result<&'de [u8]> {
         if self.input.len() < size {
             return Err(Error::NoEnoughData {
                 expected: size,
@@ -183,11 +183,11 @@ impl<'de> BinaryParser<'de> {
 
     pub fn parse_container_size(&mut self) -> Result<usize> {
         let size = match self.config.container_length_strategy {
-            ContainerLengthStrategy::OneByte => self.parse_u8()? as usize,
-            ContainerLengthStrategy::TwoBytes => self.parse_u16()? as usize,
-            ContainerLengthStrategy::FourBytes => self.parse_u32()? as usize,
-            ContainerLengthStrategy::EightBytes => self.parse_u64()? as usize,
-            ContainerLengthStrategy::SixteenBytes => self.parse_u128()? as usize,
+            ContainerLengthStrategy::OneByte => self.u8()? as usize,
+            ContainerLengthStrategy::TwoBytes => self.u16()? as usize,
+            ContainerLengthStrategy::FourBytes => self.u32()? as usize,
+            ContainerLengthStrategy::EightBytes => self.u64()? as usize,
+            ContainerLengthStrategy::SixteenBytes => self.u128()? as usize,
         };
 
         Ok(size)
