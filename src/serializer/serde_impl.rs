@@ -128,8 +128,7 @@ impl serde::ser::Serializer for &mut BinarySerializer {
     ) -> Result<Self::Ok> {
         let _ = variant;
         let _ = name;
-        // TODO: add a warning that we only serialize the variant index as u8
-        (variant_index as u8).serialize(self)
+        (variant_index as u32).serialize(self)
     }
 
     fn serialize_newtype_struct<T>(self, name: &'static str, value: &T) -> Result<Self::Ok>
@@ -152,8 +151,7 @@ impl serde::ser::Serializer for &mut BinarySerializer {
     {
         let _ = name;
         let _ = variant;
-        // TODO: add a warning that we only serialize the variant index as u8
-        self.output.put_u8(variant_index as u8);
+        self.u32(variant_index as u32)?;
         value.serialize(self)
     }
 
@@ -189,8 +187,7 @@ impl serde::ser::Serializer for &mut BinarySerializer {
         let _ = len;
         let _ = variant;
         let _ = name;
-        // TODO: add a warning that we only serialize the variant index as u8
-        self.output.put_u8(variant_index as u8);
+        self.u32(variant_index as u32)?;
         Ok(self)
     }
 
@@ -217,8 +214,7 @@ impl serde::ser::Serializer for &mut BinarySerializer {
         let _ = len;
         let _ = variant;
         let _ = name;
-        // TODO: add a warning that we only serialize the variant index as u8
-        self.output.put_u8(variant_index as u8);
+        self.u32(variant_index as u32)?;
         Ok(self)
     }
 }

@@ -1,119 +1,118 @@
 #[cfg(test)]
 mod serializer_little_endian_tagged_optional {
-    use binja::serde_to_bytes;
-    use serde::Serialize;
+    use binja::{BinarySerialize, to_bytes};
 
     #[test]
     fn bool() {
         let expected = vec![0x01];
         let j = true;
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
 
         let expected = vec![0x00];
         let j = false;
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
     }
 
     #[test]
     fn integers() {
         let expected = vec![0x01];
         let j: i8 = 1;
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
 
         let expected = vec![0x01, 0x00];
         let j: i16 = 1;
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
 
         let expected = vec![0x01, 0x00, 0x00, 0x00];
         let j: i32 = 1;
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
 
         let expected = vec![0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
         let j: i64 = 1;
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
 
         let expected = vec![
             0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00,
         ];
         let j: i128 = 1;
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
 
         let expected = vec![0x01];
         let j: u8 = 1;
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
 
         let expected = vec![0x01, 0x00];
         let j: u16 = 1;
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
 
         let expected = vec![0x01, 0x00, 0x00, 0x00];
         let j: u32 = 1;
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
 
         let expected = vec![0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
         let j: u64 = 1;
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
 
         let expected = vec![
             0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00,
         ];
         let j: u128 = 1;
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
     }
 
     #[test]
     fn floats() {
         let expected = vec![0x00, 0x00, 0x80, 0x3f];
         let j: f32 = 1.0;
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
 
         let expected = vec![0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf0, 0x3f];
         let j: f64 = 1.0;
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
     }
 
     #[test]
     fn char() {
         let expected = vec![b'a'];
         let j: char = 'a';
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
     }
 
     #[test]
     fn string() {
         let expected = vec![0x01, 0x00, 0x00, 0x00, b'a'];
         let j = "a".to_owned();
-        assert_eq!(expected, serde_to_bytes::<String>(&j).unwrap());
+        assert_eq!(expected, to_bytes::<String>(&j).unwrap());
     }
 
     #[test]
     fn option() {
         let expected = vec![0x01, 0x01];
         let j = Some(1u8);
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
 
         let expected = vec![0x00];
         let j: Option<u8> = None;
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
     }
 
     #[test]
     fn unit() {
         let expected: Vec<u8> = vec![];
         let j = ();
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
     }
 
     #[test]
     fn newtype_struct() {
-        #[derive(Serialize, PartialEq, Debug)]
+        #[derive(BinarySerialize, PartialEq, Debug)]
         struct Newtype(u32);
 
         let expected = vec![0x01, 0x00, 0x00, 0x00];
         let j = Newtype(1);
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
     }
 
     #[test]
@@ -126,24 +125,24 @@ mod serializer_little_endian_tagged_optional {
             b'b', // string
         ];
         let j = vec!["a".to_owned(), "b".to_owned()];
-        assert_eq!(expected, serde_to_bytes::<Vec<String>>(&j).unwrap());
+        assert_eq!(expected, to_bytes::<Vec<String>>(&j).unwrap());
     }
 
     #[test]
     fn tuple() {
         let expected = vec![0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00];
         let j = (1u32, 2u32);
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
     }
 
     #[test]
     fn tuple_struct() {
-        #[derive(Serialize, PartialEq, Debug)]
+        #[derive(BinarySerialize, PartialEq, Debug)]
         struct TupleStruct(u32, u32);
 
         let expected = vec![0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00];
         let j = TupleStruct(1, 2);
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
     }
 
     #[test]
@@ -167,12 +166,12 @@ mod serializer_little_endian_tagged_optional {
         j.insert("a".to_owned(), "1".to_owned());
         j.insert("b".to_owned(), "2".to_owned());
 
-        assert_eq!(expected.len(), serde_to_bytes(&j).unwrap().len());
+        assert_eq!(expected.len(), to_bytes(&j).unwrap().len());
     }
 
     #[test]
     fn test_struct() {
-        #[derive(Serialize, PartialEq, Debug)]
+        #[derive(BinarySerialize, PartialEq, Debug)]
         struct Test {
             int: u32,
             opt: Option<u32>,
@@ -195,12 +194,13 @@ mod serializer_little_endian_tagged_optional {
             0x01, 0x00, 0x00, 0x00, // string size
             b'b', // string
         ];
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
     }
 
     #[test]
     fn test_enum() {
-        #[derive(Serialize, PartialEq, Debug)]
+        #[derive(BinarySerialize, PartialEq, Debug)]
+        #[binja(repr = "u8")]
         enum E {
             Unit,
             Newtype(u32),
@@ -212,14 +212,14 @@ mod serializer_little_endian_tagged_optional {
         //  variant index --> 1 byte
         let expected = vec![0x00];
         let j = E::Unit;
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
 
         // new type
         //  variant index --> 1 byte
         //  value --> 4 bytes
         let expected = vec![0x01, 0x01, 0x00, 0x00, 0x00];
         let j = E::Newtype(1);
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
 
         // tuple
         //  variant index --> 1 byte
@@ -227,7 +227,7 @@ mod serializer_little_endian_tagged_optional {
         //  value2 --> 4 bytes
         let expected = vec![0x02, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00];
         let j = E::Tuple(1, 2);
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
 
         // struct
         let expected = vec![
@@ -241,7 +241,7 @@ mod serializer_little_endian_tagged_optional {
             b: -2,
             c: 3.0,
         };
-        assert_eq!(expected, serde_to_bytes(&j).unwrap());
+        assert_eq!(expected, to_bytes(&j).unwrap());
     }
 }
 
@@ -249,16 +249,17 @@ mod serializer_little_endian_tagged_optional {
 mod serializer_big_endian_untagged_optional {
 
     use binja::{
+        BinarySerialize,
         config::{Config, EndiannessStrategy, OptionalStrategy},
         error::Result,
-        serde_to_bytes_with_config,
+        serializer::BinarySerialize,
+        to_bytes_with_config,
     };
     use bytes::BytesMut;
-    use serde::Serialize;
 
     pub fn to_bytes<T>(value: &T) -> Result<BytesMut>
     where
-        T: Serialize,
+        T: BinarySerialize,
     {
         let config = Config {
             endianness_strategy: EndiannessStrategy::Big,
@@ -266,7 +267,7 @@ mod serializer_big_endian_untagged_optional {
             ..Default::default()
         };
 
-        serde_to_bytes_with_config(value, config)
+        to_bytes_with_config(value, config)
     }
 
     #[test]
@@ -377,7 +378,7 @@ mod serializer_big_endian_untagged_optional {
 
     #[test]
     fn newtype_struct() {
-        #[derive(Serialize, PartialEq, Debug)]
+        #[derive(BinarySerialize, PartialEq, Debug)]
         struct Newtype(u32);
 
         let expected = vec![0x00, 0x00, 0x00, 0x01];
@@ -407,7 +408,7 @@ mod serializer_big_endian_untagged_optional {
 
     #[test]
     fn tuple_struct() {
-        #[derive(Serialize, PartialEq, Debug)]
+        #[derive(BinarySerialize, PartialEq, Debug)]
         struct TupleStruct(u32, u32);
 
         let expected = vec![0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02];
@@ -440,7 +441,7 @@ mod serializer_big_endian_untagged_optional {
 
     #[test]
     fn test_struct() {
-        #[derive(Serialize, PartialEq, Debug)]
+        #[derive(BinarySerialize, PartialEq, Debug)]
         struct Test {
             int: u32,
             opt: Option<u32>,
@@ -468,7 +469,8 @@ mod serializer_big_endian_untagged_optional {
 
     #[test]
     fn test_enum() {
-        #[derive(Serialize, PartialEq, Debug)]
+        #[derive(BinarySerialize, PartialEq, Debug)]
+        #[binja(repr = "u8")]
         enum E {
             Unit,
             Newtype(u32),
