@@ -1,5 +1,5 @@
-use binja::{BinaryParse, from_bytes};
-#[derive(BinaryParse, PartialEq, Debug)]
+use binja::{BinaryParse, BinarySerialize, from_bytes};
+#[derive(BinarySerialize, BinaryParse, PartialEq, Debug)]
 #[binja(repr = "u8")]
 enum E {
     Unit,
