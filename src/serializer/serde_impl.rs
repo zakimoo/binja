@@ -84,8 +84,7 @@ impl serde::ser::Serializer for &mut BinarySerializer {
     }
 
     fn serialize_char(self, v: char) -> Result<Self::Ok> {
-        self.output.put_slice(v.to_string().as_bytes());
-        self.check_limit()
+        self.char(v)
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok> {

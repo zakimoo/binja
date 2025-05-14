@@ -46,7 +46,7 @@ fn generate_enum_serialize_variants(
 ) -> Vec<proc_macro2::TokenStream> {
     let repr = attr.repr();
     let untagged = attr.untagged();
-    let mut current_value: isize = 0;
+    let mut current_value: isize = -1;
 
     variants
         .iter()
@@ -182,7 +182,7 @@ fn parse_tagged_enum(
     variants: &syn::punctuated::Punctuated<syn::Variant, syn::token::Comma>,
     repr: String,
 ) -> proc_macro2::TokenStream {
-    let mut current_value: isize = 0;
+    let mut current_value: isize = -1;
     let mut seen_values = vec![];
     let variant_arms = variants
         .iter()

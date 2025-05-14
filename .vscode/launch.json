@@ -1,102 +1,56 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in library 'binary_plz'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--lib",
-                    "--package=binary_plz"
-                ],
-                "filter": {
-                    "name": "binary_plz",
-                    "kind": "lib"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug executable 'binary_plz'",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--bin=binary_plz",
-                    "--package=binary_plz"
-                ],
-                "filter": {
-                    "name": "binary_plz",
-                    "kind": "bin"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in executable 'binary_plz'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--bin=binary_plz",
-                    "--package=binary_plz"
-                ],
-                "filter": {
-                    "name": "binary_plz",
-                    "kind": "bin"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug integration test 'parser_tests'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--test=parser_tests",
-                    "--package=binary_plz"
-                ],
-                "filter": {
-                    "name": "parser_tests",
-                    "kind": "test"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug integration test 'serializer_tests'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--test=serializer_tests",
-                    "--package=binary_plz"
-                ],
-                "filter": {
-                    "name": "serializer_tests",
-                    "kind": "test"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in library 'binja'",
+      "cargo": {
+        "args": ["test", "--no-run", "--lib", "--package=binja"],
+        "filter": {
+          "name": "binja",
+          "kind": "lib"
         }
-    ]
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug integration test 'parser_tests'",
+      "cargo": {
+        "args": ["test", "--no-run", "--test=parser_tests", "--package=binja"],
+        "filter": {
+          "name": "parser_tests",
+          "kind": "test"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug integration test 'serializer_tests'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--test=serializer_tests",
+          "--package=binja"
+        ],
+        "filter": {
+          "name": "serializer_tests",
+          "kind": "test"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
 }

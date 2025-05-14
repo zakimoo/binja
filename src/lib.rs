@@ -10,6 +10,8 @@ use parser::{BinaryParse, BinaryParser};
 use serde::{Deserialize, Serialize};
 use serializer::{BinarySerialize, BinarySerializer};
 
+pub use binja_derive::{BinaryParse, BinarySerialize};
+
 /// Serializes a given value into a binary format using the default configuration.
 ///
 /// # Default Configuration
@@ -27,10 +29,9 @@ use serializer::{BinarySerialize, BinarySerializer};
 ///
 /// # Example
 /// ```rust
-/// use binja::to_bytes;
-/// use serde::Serialize;
+/// use binja::{to_bytes, BinarySerialize};
 ///
-/// #[derive(Serialize)]
+/// #[derive(BinarySerialize)]
 /// struct Example {
 ///     field1: u32,
 ///     field2: Option<u32>,
@@ -44,18 +45,19 @@ use serializer::{BinarySerialize, BinarySerializer};
 /// let serialized = to_bytes(&value).unwrap().to_vec();
 /// assert_eq!(serialized, vec![0x2A, 0x0, 0x0, 0x0, 0x1, 0x7, 0x0, 0x0, 0x0]);
 /// ```
-pub fn serde_to_bytes<T>(value: &T) -> Result<BytesMut>
-where
-    T: Serialize,
-{
-    serde_to_bytes_with_config(value, Config::default())
-}
-
 pub fn to_bytes<T>(value: &T) -> Result<BytesMut>
 where
     T: BinarySerialize,
 {
     to_bytes_with_config(value, Config::default())
+}
+
+/// See [`to_bytes`].
+pub fn serde_to_bytes<T>(value: &T) -> Result<BytesMut>
+where
+    T: Serialize,
+{
+    serde_to_bytes_with_config(value, Config::default())
 }
 
 /// Serializes a given value into a binary format using a custom configuration.
@@ -70,11 +72,10 @@ where
 ///
 /// # Example
 /// ```rust
-/// use binja::to_bytes_with_config;
+/// use binja::{to_bytes_with_config, BinarySerialize};
 /// use binja::config::{Config, EndiannessStrategy, OptionalStrategy};
-/// use serde::Serialize;
 ///
-/// #[derive(Serialize)]
+/// #[derive(BinarySerialize)]
 /// struct Example {
 ///     field1: u32,
 ///     field2: Option<u32>,
@@ -94,14 +95,6 @@ where
 /// let serialized = to_bytes_with_config(&value, config).unwrap().to_vec();
 /// assert_eq!(serialized, vec![0x00, 0x00, 0x00, 0x2A, 0x01, 0x00, 0x00, 0x00, 0x07]);
 /// ```
-pub fn serde_to_bytes_with_config<T>(value: &T, config: Config) -> Result<BytesMut>
-where
-    T: Serialize,
-{
-    let mut serializer = BinarySerializer::new(config);
-    value.serialize(&mut serializer)?;
-    Ok(serializer.output())
-}
 
 pub fn to_bytes_with_config<T>(value: &T, config: Config) -> Result<BytesMut>
 where
@@ -109,6 +102,16 @@ where
 {
     let mut serializer = BinarySerializer::new(config);
     value.binary_serialize(&mut serializer)?;
+    Ok(serializer.output())
+}
+
+/// See [`to_bytes_with_config`].
+pub fn serde_to_bytes_with_config<T>(value: &T, config: Config) -> Result<BytesMut>
+where
+    T: Serialize,
+{
+    let mut serializer = BinarySerializer::new(config);
+    value.serialize(&mut serializer)?;
     Ok(serializer.output())
 }
 
@@ -129,10 +132,9 @@ where
 ///
 /// # Example
 /// ```rust
-/// use binja::from_bytes;
-/// use serde::Deserialize;
+/// use binja::{from_bytes, BinaryParse};
 ///
-/// #[derive(Deserialize, PartialEq, Debug)]
+/// #[derive(BinaryParse, PartialEq, Debug)]
 /// struct Example {
 ///     field1: u32,
 ///     field2: Option<u32>,
@@ -148,18 +150,19 @@ where
 ///     }
 /// );
 /// ```
-pub fn serde_from_bytes<'a, T>(bytes: &'a [u8]) -> Result<T>
-where
-    T: Deserialize<'a>,
-{
-    serde_from_bytes_with_config(bytes, Config::default())
-}
-
 pub fn from_bytes<'a, T>(bytes: &'a [u8]) -> Result<T>
 where
     T: BinaryParse,
 {
     from_bytes_with_config(bytes, Config::default())
+}
+
+/// See [`from_bytes`].
+pub fn serde_from_bytes<'a, T>(bytes: &'a [u8]) -> Result<T>
+where
+    T: Deserialize<'a>,
+{
+    serde_from_bytes_with_config(bytes, Config::default())
 }
 
 /// Deserializes a binary slice into a value of type `T` using a custom configuration.
@@ -174,11 +177,10 @@ where
 ///
 /// # Example
 /// ```rust
-/// use binja::from_bytes_with_config;
+/// use binja::{from_bytes_with_config, BinaryParse};
 /// use binja::config::{Config, EndiannessStrategy, OptionalStrategy};
-/// use serde::Deserialize;
 ///
-/// #[derive(Deserialize, PartialEq, Debug)]
+/// #[derive(BinaryParse, PartialEq, Debug)]
 /// struct Example {
 ///     field1: u32,
 ///     field2: Option<u32>,
@@ -200,15 +202,6 @@ where
 ///     }
 /// );
 /// ```
-pub fn serde_from_bytes_with_config<'a, T>(bytes: &'a [u8], config: Config) -> Result<T>
-where
-    T: Deserialize<'a>,
-{
-    let mut deserializer = BinaryParser::new(bytes, config);
-
-    T::deserialize(&mut deserializer)
-}
-
 pub fn from_bytes_with_config<'a, T>(bytes: &'a [u8], config: Config) -> Result<T>
 where
     T: BinaryParse,
@@ -216,4 +209,14 @@ where
     let mut deserializer = BinaryParser::new(bytes, config);
 
     T::binary_parse(&mut deserializer)
+}
+
+/// See [`from_bytes_with_config`].
+pub fn serde_from_bytes_with_config<'a, T>(bytes: &'a [u8], config: Config) -> Result<T>
+where
+    T: Deserialize<'a>,
+{
+    let mut deserializer = BinaryParser::new(bytes, config);
+
+    T::deserialize(&mut deserializer)
 }

@@ -161,3 +161,113 @@ where
         Ok(arr)
     }
 }
+
+impl<K, V> BinaryParse for std::collections::HashMap<K, V>
+where
+    K: BinaryParse + std::hash::Hash + Eq,
+    V: BinaryParse,
+{
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let len = parser.container_size()?;
+
+        let mut map = std::collections::HashMap::with_capacity(len as usize);
+
+        for _ in 0..len {
+            let key = K::binary_parse(parser)?;
+            let value = V::binary_parse(parser)?;
+            map.insert(key, value);
+        }
+
+        Ok(map)
+    }
+}
+
+impl<T> BinaryParse for std::collections::HashSet<T>
+where
+    T: BinaryParse + std::hash::Hash + Eq,
+{
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let len = parser.container_size()?;
+
+        let mut set = std::collections::HashSet::with_capacity(len as usize);
+
+        for _ in 0..len {
+            let value = T::binary_parse(parser)?;
+            set.insert(value);
+        }
+
+        Ok(set)
+    }
+}
+
+impl<K, V> BinaryParse for std::collections::BTreeMap<K, V>
+where
+    K: BinaryParse + std::cmp::Ord,
+    V: BinaryParse,
+{
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let len = parser.container_size()?;
+
+        let mut map = std::collections::BTreeMap::new();
+
+        for _ in 0..len {
+            let key = K::binary_parse(parser)?;
+            let value = V::binary_parse(parser)?;
+            map.insert(key, value);
+        }
+
+        Ok(map)
+    }
+}
+
+impl<T> BinaryParse for std::collections::BTreeSet<T>
+where
+    T: BinaryParse + std::cmp::Ord,
+{
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let len = parser.container_size()?;
+
+        let mut set = std::collections::BTreeSet::new();
+
+        for _ in 0..len {
+            let value = T::binary_parse(parser)?;
+            set.insert(value);
+        }
+
+        Ok(set)
+    }
+}
+
+macro_rules! impl_binary_parse_for_tuple {
+    ($($name:ident),+) => {
+        impl<$($name),+> BinaryParse for ($($name,)+)
+        where
+            $($name: BinaryParse,)*
+        {
+            fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
+                Ok(($(
+                    $name::binary_parse(parser)?,
+                )+))
+            }
+        }
+    };
+}
+
+impl_binary_parse_for_tuple!(T);
+impl_binary_parse_for_tuple!(T1, T2);
+impl_binary_parse_for_tuple!(T1, T2, T3);
+impl_binary_parse_for_tuple!(T1, T2, T3, T4);
+impl_binary_parse_for_tuple!(T1, T2, T3, T4, T5);
+impl_binary_parse_for_tuple!(T1, T2, T3, T4, T5, T6);

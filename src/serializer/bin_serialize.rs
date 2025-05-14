@@ -92,7 +92,7 @@ impl BinarySerialize for f64 {
 
 impl BinarySerialize for char {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
-        serializer.u32(*self as u32)
+        serializer.char(*self)
     }
 }
 
@@ -155,3 +155,87 @@ where
         Ok(())
     }
 }
+
+impl<K, V> BinarySerialize for std::collections::HashMap<K, V>
+where
+    K: BinarySerialize,
+    V: BinarySerialize,
+{
+    fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
+        serializer.container_length(self.len());
+        for (key, value) in self {
+            key.binary_serialize(serializer)?;
+            value.binary_serialize(serializer)?;
+        }
+        Ok(())
+    }
+}
+
+impl<T> BinarySerialize for std::collections::HashSet<T>
+where
+    T: BinarySerialize,
+{
+    fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
+        serializer.container_length(self.len());
+        for item in self {
+            item.binary_serialize(serializer)?;
+        }
+        Ok(())
+    }
+}
+
+impl<K, V> BinarySerialize for std::collections::BTreeMap<K, V>
+where
+    K: BinarySerialize,
+    V: BinarySerialize,
+{
+    fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
+        serializer.container_length(self.len());
+        for (key, value) in self {
+            key.binary_serialize(serializer)?;
+            value.binary_serialize(serializer)?;
+        }
+        Ok(())
+    }
+}
+
+impl<T> BinarySerialize for std::collections::BTreeSet<T>
+where
+    T: BinarySerialize,
+{
+    fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
+        serializer.container_length(self.len());
+        for item in self {
+            item.binary_serialize(serializer)?;
+        }
+        Ok(())
+    }
+}
+
+macro_rules! impl_binary_serialize_for_tuple {
+    ($($name:ident),+) => {
+        #[allow(non_snake_case)]
+        impl<$($name),+> BinarySerialize for ($($name,)+)
+        where
+            $($name: BinarySerialize),+
+        {
+            fn binary_serialize(
+                &self,
+                serializer: &mut BinarySerializer,
+            ) -> Result<()> {
+                let ($($name,)+) = self;
+                $(
+                    $name.binary_serialize(serializer)?;
+                )+
+                Ok(())
+            }
+        }
+    };
+}
+
+impl_binary_serialize_for_tuple!(T1);
+impl_binary_serialize_for_tuple!(T1, T2);
+impl_binary_serialize_for_tuple!(T1, T2, T3);
+impl_binary_serialize_for_tuple!(T1, T2, T3, T4);
+impl_binary_serialize_for_tuple!(T1, T2, T3, T4, T5);
+impl_binary_serialize_for_tuple!(T1, T2, T3, T4, T5, T6);
