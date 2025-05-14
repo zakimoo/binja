@@ -189,7 +189,7 @@ impl<'de> de::Deserializer<'de> for &mut BinaryParser<'de> {
     where
         V: Visitor<'de>,
     {
-        let len = self.parse_container_size()?;
+        let len = self.container_size()?;
         visitor.visit_seq(SeqAccess::new(self, len))
     }
 
@@ -216,7 +216,7 @@ impl<'de> de::Deserializer<'de> for &mut BinaryParser<'de> {
     where
         V: Visitor<'de>,
     {
-        let len = self.parse_container_size()?;
+        let len = self.container_size()?;
         visitor.visit_map(MapAccess::new(self, len))
     }
 

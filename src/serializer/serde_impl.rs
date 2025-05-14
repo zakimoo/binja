@@ -32,55 +32,55 @@ impl serde::ser::Serializer for &mut BinarySerializer {
     }
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok> {
-        self.put_bool(v)
+        self.bool(v)
     }
 
     fn serialize_i8(self, v: i8) -> Result<Self::Ok> {
-        self.put_i8(v)
+        self.i8(v)
     }
 
     fn serialize_i16(self, v: i16) -> Result<Self::Ok> {
-        self.put_i16(v)
+        self.i16(v)
     }
 
     fn serialize_i32(self, v: i32) -> Result<Self::Ok> {
-        self.put_i32(v)
+        self.i32(v)
     }
 
     fn serialize_i64(self, v: i64) -> Result<Self::Ok> {
-        self.put_i64(v)
+        self.i64(v)
     }
 
     fn serialize_i128(self, v: i128) -> Result<Self::Ok> {
-        self.put_i128(v)
+        self.i128(v)
     }
 
     fn serialize_u8(self, v: u8) -> Result<Self::Ok> {
-        self.put_u8(v)
+        self.u8(v)
     }
 
     fn serialize_u16(self, v: u16) -> Result<Self::Ok> {
-        self.put_u16(v)
+        self.u16(v)
     }
 
     fn serialize_u32(self, v: u32) -> Result<Self::Ok> {
-        self.put_u32(v)
+        self.u32(v)
     }
 
     fn serialize_u64(self, v: u64) -> Result<Self::Ok> {
-        self.put_u64(v)
+        self.u64(v)
     }
 
     fn serialize_u128(self, v: u128) -> Result<Self::Ok> {
-        self.put_u128(v)
+        self.u128(v)
     }
 
     fn serialize_f32(self, v: f32) -> Result<Self::Ok> {
-        self.put_f32(v)
+        self.f32(v)
     }
 
     fn serialize_f64(self, v: f64) -> Result<Self::Ok> {
-        self.put_f64(v)
+        self.f64(v)
     }
 
     fn serialize_char(self, v: char) -> Result<Self::Ok> {
@@ -89,11 +89,11 @@ impl serde::ser::Serializer for &mut BinarySerializer {
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok> {
-        self.put_str(v)
+        self.str(v)
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok> {
-        self.put_bytes(v)
+        self.bytes(v)
     }
 
     fn serialize_none(self) -> Result<Self::Ok> {
@@ -160,7 +160,7 @@ impl serde::ser::Serializer for &mut BinarySerializer {
 
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq> {
         if let Some(len) = len {
-            self.put_container_length(len);
+            self.container_length(len);
         }
         Ok(self)
     }
@@ -197,7 +197,7 @@ impl serde::ser::Serializer for &mut BinarySerializer {
 
     fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap> {
         if let Some(len) = len {
-            self.put_container_length(len);
+            self.container_length(len);
         }
         Ok(self)
     }

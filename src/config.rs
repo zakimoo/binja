@@ -1,4 +1,4 @@
-/// Represents the configuration for the `binary_plz` serializer and deserializer.
+/// Represents the configuration for the `binja` serializer and deserializer.
 ///
 /// This struct allows users to customize strategies:
 ///
@@ -25,13 +25,13 @@ impl Config {
         Self::default()
     }
 
-    /// Makes binary_plz serialize and deserialize integers in big-endian format
+    /// Makes binja serialize and deserialize integers in big-endian format
     pub fn with_big_endian(mut self) -> Self {
         self.endianness_strategy = EndiannessStrategy::Big;
         self
     }
 
-    /// Makes binary_plz serialize and deserialize integers in little-endian format.
+    /// Makes binja serialize and deserialize integers in little-endian format.
     pub fn with_little_endian(mut self) -> Self {
         self.endianness_strategy = EndiannessStrategy::Little;
         self

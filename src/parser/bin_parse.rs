@@ -137,7 +137,7 @@ where
     where
         Self: Sized,
     {
-        let len = parser.parse_container_size()?;
+        let len = parser.container_size()?;
 
         let mut vec = Vec::with_capacity(len as usize);
 

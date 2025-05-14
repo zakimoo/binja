@@ -27,7 +27,7 @@ use serializer::{BinarySerialize, BinarySerializer};
 ///
 /// # Example
 /// ```rust
-/// use binary_plz::to_bytes;
+/// use binja::to_bytes;
 /// use serde::Serialize;
 ///
 /// #[derive(Serialize)]
@@ -70,8 +70,8 @@ where
 ///
 /// # Example
 /// ```rust
-/// use binary_plz::to_bytes_with_config;
-/// use binary_plz::config::{Config, EndiannessStrategy, OptionalStrategy};
+/// use binja::to_bytes_with_config;
+/// use binja::config::{Config, EndiannessStrategy, OptionalStrategy};
 /// use serde::Serialize;
 ///
 /// #[derive(Serialize)]
@@ -129,7 +129,7 @@ where
 ///
 /// # Example
 /// ```rust
-/// use binary_plz::from_bytes;
+/// use binja::from_bytes;
 /// use serde::Deserialize;
 ///
 /// #[derive(Deserialize, PartialEq, Debug)]
@@ -174,8 +174,8 @@ where
 ///
 /// # Example
 /// ```rust
-/// use binary_plz::from_bytes_with_config;
-/// use binary_plz::config::{Config, EndiannessStrategy, OptionalStrategy};
+/// use binja::from_bytes_with_config;
+/// use binja::config::{Config, EndiannessStrategy, OptionalStrategy};
 /// use serde::Deserialize;
 ///
 /// #[derive(Deserialize, PartialEq, Debug)]

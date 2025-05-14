@@ -154,7 +154,7 @@ impl<'de> BinaryParser<'de> {
     }
 
     pub fn string(&mut self) -> Result<&'de str> {
-        let len = self.parse_container_size()?;
+        let len = self.container_size()?;
 
         if self.input.len() < len {
             return Err(Error::NoEnoughData {
@@ -187,7 +187,7 @@ impl<'de> BinaryParser<'de> {
         Ok(value)
     }
 
-    pub fn parse_container_size(&mut self) -> Result<usize> {
+    pub fn container_size(&mut self) -> Result<usize> {
         let size = match self.config.container_length_strategy {
             ContainerLengthStrategy::OneByte => self.u8()? as usize,
             ContainerLengthStrategy::TwoBytes => self.u16()? as usize,

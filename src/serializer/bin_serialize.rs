@@ -21,90 +21,90 @@ impl BinarySerialize for () {
 
 impl BinarySerialize for bool {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
-        serializer.put_bool(*self)
+        serializer.bool(*self)
     }
 }
 
 impl BinarySerialize for i8 {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
-        serializer.put_i8(*self)
+        serializer.i8(*self)
     }
 }
 impl BinarySerialize for i16 {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
-        serializer.put_i16(*self)
+        serializer.i16(*self)
     }
 }
 impl BinarySerialize for i32 {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
-        serializer.put_i32(*self)
+        serializer.i32(*self)
     }
 }
 impl BinarySerialize for i64 {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
-        serializer.put_i64(*self)
+        serializer.i64(*self)
     }
 }
 impl BinarySerialize for i128 {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
-        serializer.put_i128(*self)
+        serializer.i128(*self)
     }
 }
 impl BinarySerialize for u8 {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
-        serializer.put_u8(*self)
+        serializer.u8(*self)
     }
 }
 impl BinarySerialize for u16 {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
-        serializer.put_u16(*self)
+        serializer.u16(*self)
     }
 }
 impl BinarySerialize for u32 {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
-        serializer.put_u32(*self)
+        serializer.u32(*self)
     }
 }
 
 impl BinarySerialize for u64 {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
-        serializer.put_u64(*self)
+        serializer.u64(*self)
     }
 }
 
 impl BinarySerialize for u128 {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
-        serializer.put_u128(*self)
+        serializer.u128(*self)
     }
 }
 
 impl BinarySerialize for f32 {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
-        serializer.put_f32(*self)
+        serializer.f32(*self)
     }
 }
 
 impl BinarySerialize for f64 {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
-        serializer.put_f64(*self)
+        serializer.f64(*self)
     }
 }
 
 impl BinarySerialize for char {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
-        serializer.put_u32(*self as u32)
+        serializer.u32(*self as u32)
     }
 }
 
 impl BinarySerialize for String {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
-        serializer.put_str(self)
+        serializer.str(self)
     }
 }
 
 impl BinarySerialize for &str {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
-        serializer.put_str(self)
+        serializer.str(self)
     }
 }
 
@@ -113,7 +113,7 @@ where
     T: BinarySerialize,
 {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
-        serializer.put_optional(self)
+        serializer.optional(self)
     }
 }
 
@@ -122,7 +122,7 @@ where
     T: BinarySerialize,
 {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
-        serializer.put_container_length(self.len());
+        serializer.container_length(self.len());
 
         for item in self {
             item.binary_serialize(serializer)?;
