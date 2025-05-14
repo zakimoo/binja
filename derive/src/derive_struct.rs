@@ -6,8 +6,8 @@ use syn::parse_quote;
 use crate::attribute::{FieldAttributes, StructAttributes};
 
 pub fn generate_struct_binary_serialize(
-    attributes: StructAttributes,
     data: &syn::DataStruct,
+    attributes: &StructAttributes,
 ) -> TokenStream {
     let name = &attributes.ident;
     let generics = &attributes.generics;
@@ -54,8 +54,8 @@ pub fn generate_struct_binary_serialize(
 }
 
 pub fn generate_struct_binary_parse(
-    attributes: StructAttributes,
     data: &syn::DataStruct,
+    attributes: &StructAttributes,
 ) -> TokenStream {
     let name = &attributes.ident;
     let generics = &attributes.generics;
