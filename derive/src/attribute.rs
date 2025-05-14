@@ -47,7 +47,7 @@ impl EnumAttributes {
     }
 }
 
-#[derive(Debug, FromField)]
+#[derive(Debug, Default, FromField)]
 #[darling(attributes(binja))]
 pub struct FieldAttributes {
     #[allow(unused)]
@@ -55,4 +55,10 @@ pub struct FieldAttributes {
 
     // #[binja(skip)]
     pub skip: Option<()>,
+}
+
+impl FieldAttributes {
+    pub fn skip(&self) -> bool {
+        self.skip.is_some()
+    }
 }

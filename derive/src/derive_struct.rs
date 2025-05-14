@@ -123,25 +123,30 @@ pub fn generate_serialize_named_fields(
             let opts = FieldAttributes::from_field(f).ok()?;
             let ident = &f.ident;
 
-            // skip file
-            if opts.skip.is_some() {
-                None
-            } else if is_struct {
+            // skip field
+            if opts.skip() {
+                return None;
+            }
+
+            let field_ident = if is_struct {
                 // struct Example { field: String }
                 // ::binja::serializer::binary_serialize(&self.field, serializer)?;
                 Some(quote! {
-                    ::binja::serializer::binary_serialize(&self.#ident, serializer)?;
+                    &self.#ident
                 })
             } else {
                 // enum Example { A { field: String } }
                 // match self{
                 //     Self::A { field } => {
-                //         ::binja::serializer::binary_serialize(&field, serializer)?,
+                //         ::binja::serializer::binary_serialize(field, serializer)?,
                 //     }
                 Some(quote! {
-                    ::binja::serializer::binary_serialize(#ident, serializer)?;
+                    #ident
                 })
-            }
+            };
+            Some(quote! {
+                ::binja::serializer::binary_serialize(#field_ident, serializer)?;
+            })
         })
         .collect()
 }
@@ -159,7 +164,7 @@ pub fn generate_parse_named_fields(
             let ident = &f.ident;
 
             // skip file
-            if opts.skip.is_some() {
+            if opts.skip() {
                 Some(quote! {
                     #ident: Default::default(),
                 })
@@ -186,7 +191,7 @@ pub fn generate_serialize_unnamed_fields(
             let index = syn::Index::from(i);
 
             // skip file
-            if opts.skip.is_some() {
+            if opts.skip() {
                 None
             } else if is_struct {
                 // struct Example(u8)
@@ -223,7 +228,7 @@ pub fn generate_parse_unnamed_fields(
             let index = syn::Index::from(i);
 
             // skip file
-            if opts.skip.is_some() {
+            if opts.skip() {
                 Some(quote! {
                     #index : Default::default(),
                 })
