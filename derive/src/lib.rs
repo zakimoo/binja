@@ -3,7 +3,7 @@ mod derive_enum;
 mod derive_struct;
 
 use attribute::{EnumAttributes, StructAttributes};
-use derive_enum::generate_enum_binary_serialize;
+use derive_enum::{generate_enum_binary_parse, generate_enum_binary_serialize};
 use derive_struct::{generate_struct_binary_parse, generate_struct_binary_serialize};
 
 use darling::FromDeriveInput;
@@ -28,7 +28,7 @@ pub fn derive_binary_serialize(input: TokenStream) -> TokenStream {
                 Ok(c) => c,
                 Err(e) => return e.write_errors().into(),
             };
-            generate_enum_binary_serialize(attr, data)
+            generate_enum_binary_serialize(data, &attr)
         }
         syn::Data::Union(_) => todo!(),
     }
@@ -48,7 +48,11 @@ pub fn derive_binary_parse(input: TokenStream) -> TokenStream {
             generate_struct_binary_parse(attr, data)
         }
         syn::Data::Enum(data) => {
-            todo!()
+            let attr = match EnumAttributes::from_derive_input(&input) {
+                Ok(c) => c,
+                Err(e) => return e.write_errors().into(),
+            };
+            generate_enum_binary_parse(data, &attr)
         }
         syn::Data::Union(_) => todo!(),
     }

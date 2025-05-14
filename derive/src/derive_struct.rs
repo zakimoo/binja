@@ -25,50 +25,18 @@ pub fn generate_struct_binary_serialize(
     let fields_token = match &data.fields {
         // struct Example { field: String }
         syn::Fields::Named(fields_named) => {
-            let serialize_fields = fields_named.named.iter().filter_map(|f| {
-                // Check if the field has attributes
-                let opts = FieldAttributes::from_field(f).ok()?;
-                let ident = &f.ident;
-
-                // skip file
-                if opts.skip.is_some() {
-                    None
-                } else {
-                    Some(quote! {
-                        ::binja::serializer::binary_serialize(&self.#ident, serializer)?;
-                    })
-                }
-            });
-
+            let serialize_fields = generate_serialize_named_fields(fields_named, true);
             quote! {
                 #(#serialize_fields)*
             }
         }
-
         // struct Example(String) , struct Example(String, String)
         syn::Fields::Unnamed(fields_unnamed) => {
-            let serialize_fields =
-                fields_unnamed
-                    .unnamed
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(i, f)| {
-                        let opts = FieldAttributes::from_field(f).ok()?;
-                        let index = syn::Index::from(i);
-                        if opts.skip.is_some() {
-                            None
-                        } else {
-                            Some(quote! {
-                            ::binja::serializer::binary_serialize(&self.#index, serializer)?;
-                            })
-                        }
-                    });
-
+            let serialize_fields = generate_serialize_unnamed_fields(fields_unnamed, true);
             quote! {
                 #(#serialize_fields)*
             }
         }
-
         // struct Example;
         syn::Fields::Unit => {
             quote! {}
@@ -105,22 +73,7 @@ pub fn generate_struct_binary_parse(
     let fields_token = match &data.fields {
         // struct Example { field: String }
         syn::Fields::Named(fields_named) => {
-            let parse_fields = fields_named.named.iter().filter_map(|f| {
-                // Check if the field has attributes
-                let opts = FieldAttributes::from_field(f).ok()?;
-                let ident = &f.ident;
-
-                // skip file
-                if opts.skip.is_some() {
-                    Some(quote! {
-                        #ident: Default::default(),
-                    })
-                } else {
-                    Some(quote! {
-                        #ident: ::binja::parser::binary_parse(parser)?,
-                    })
-                }
-            });
+            let parse_fields = generate_parse_named_fields(fields_named, true);
 
             quote! {
                 #(#parse_fields)*
@@ -129,24 +82,10 @@ pub fn generate_struct_binary_parse(
 
         // struct Example(String) , struct Example(String, String)
         syn::Fields::Unnamed(fields_unnamed) => {
-            let parse_fields = fields_unnamed
-                .unnamed
-                .iter()
-                .enumerate()
-                .filter_map(|(i, f)| {
-                    let opts = FieldAttributes::from_field(f).ok()?;
-                    let index = syn::Index::from(i);
-                    if opts.skip.is_some() {
-                        Some(quote! {
-                        #index : Default::default(),
-                         })
-                    } else {
-                        Some(quote! {
-                        #index : ::binja::parser::binary_parse(parser)?,
-                         })
-                    }
-                });
-
+            let parse_fields = generate_parse_unnamed_fields(fields_unnamed, true);
+            // 0: binja::parser::binary_parse(parser)?,
+            // 1: binja::parser::binary_parse(parser)?,
+            // 2: binja::parser::binary_parse(parser)?,
             quote! {
                 #(#parse_fields)*
             }
@@ -161,10 +100,138 @@ pub fn generate_struct_binary_parse(
     TokenStream::from(quote! {
         impl #generics binja::parser::BinaryParse for #name #generics #where_clause{
             fn binary_parse(parser: &mut ::binja::parser::BinaryParser) -> binja::error::Result<Self> {
+                // Ok(Self{
+                // field: binja::parser::binary_parse(parser)?,
+                // })
                 Ok(Self{
                     #fields_token
                 })
             }
         }
     })
+}
+
+pub fn generate_serialize_named_fields(
+    fields: &syn::FieldsNamed,
+    is_struct: bool,
+) -> Vec<proc_macro2::TokenStream> {
+    fields
+        .named
+        .iter()
+        .filter_map(|f| {
+            // Check if the field has attributes
+            let opts = FieldAttributes::from_field(f).ok()?;
+            let ident = &f.ident;
+
+            // skip file
+            if opts.skip.is_some() {
+                None
+            } else if is_struct {
+                // struct Example { field: String }
+                // ::binja::serializer::binary_serialize(&self.field, serializer)?;
+                Some(quote! {
+                    ::binja::serializer::binary_serialize(&self.#ident, serializer)?;
+                })
+            } else {
+                // enum Example { A { field: String } }
+                // match self{
+                //     Self::A { field } => {
+                //         ::binja::serializer::binary_serialize(&field, serializer)?,
+                //     }
+                Some(quote! {
+                    ::binja::serializer::binary_serialize(#ident, serializer)?;
+                })
+            }
+        })
+        .collect()
+}
+
+pub fn generate_parse_named_fields(
+    fields: &syn::FieldsNamed,
+    _is_struct: bool,
+) -> Vec<proc_macro2::TokenStream> {
+    fields
+        .named
+        .iter()
+        .filter_map(|f| {
+            // Check if the field has attributes
+            let opts = FieldAttributes::from_field(f).ok()?;
+            let ident = &f.ident;
+
+            // skip file
+            if opts.skip.is_some() {
+                Some(quote! {
+                    #ident: Default::default(),
+                })
+            } else {
+                Some(quote! {
+                    #ident: ::binja::parser::binary_parse(parser)?,
+                })
+            }
+        })
+        .collect()
+}
+
+pub fn generate_serialize_unnamed_fields(
+    fields: &syn::FieldsUnnamed,
+    is_struct: bool,
+) -> Vec<proc_macro2::TokenStream> {
+    fields
+        .unnamed
+        .iter()
+        .enumerate()
+        .filter_map(|(i, f)| {
+            // Check if the field has attributes
+            let opts = FieldAttributes::from_field(f).ok()?;
+            let index = syn::Index::from(i);
+
+            // skip file
+            if opts.skip.is_some() {
+                None
+            } else if is_struct {
+                // struct Example(u8)
+                // ::binja::serializer::binary_serialize(&self.0, serializer)?;
+                Some(quote! {
+                    ::binja::serializer::binary_serialize(&self.#index, serializer)?;
+                })
+            } else {
+                // enum Example { A { field: String } }
+                // match self{
+                //     Self::A { field_#index } => {
+                //         ::binja::serializer::binary_serialize(&field_#index, serializer)?,
+                //     }
+                let ident = syn::Ident::new(&format!("field_{i}"), proc_macro2::Span::call_site());
+                Some(quote! {
+                    ::binja::serializer::binary_serialize(#ident, serializer)?;
+                })
+            }
+        })
+        .collect()
+}
+
+pub fn generate_parse_unnamed_fields(
+    fields: &syn::FieldsUnnamed,
+    _is_struct: bool,
+) -> Vec<proc_macro2::TokenStream> {
+    fields
+        .unnamed
+        .iter()
+        .enumerate()
+        .filter_map(|(i, f)| {
+            // Check if the field has attributes
+            let opts = FieldAttributes::from_field(f).ok()?;
+            let index = syn::Index::from(i);
+
+            // skip file
+            if opts.skip.is_some() {
+                Some(quote! {
+                    #index : Default::default(),
+                })
+            } else {
+                Some(quote! {
+                    #index : ::binja::parser::binary_parse(parser)?,
+                })
+            }
+        })
+        .collect()
 }
