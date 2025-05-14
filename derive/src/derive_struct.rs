@@ -131,18 +131,18 @@ pub fn generate_serialize_named_fields(
             let field_ident = if is_struct {
                 // struct Example { field: String }
                 // ::binja::serializer::binary_serialize(&self.field, serializer)?;
-                Some(quote! {
+                quote! {
                     &self.#ident
-                })
+                }
             } else {
                 // enum Example { A { field: String } }
                 // match self{
                 //     Self::A { field } => {
                 //         ::binja::serializer::binary_serialize(field, serializer)?,
                 //     }
-                Some(quote! {
+                quote! {
                     #ident
-                })
+                }
             };
             Some(quote! {
                 ::binja::serializer::binary_serialize(#field_ident, serializer)?;
@@ -192,24 +192,30 @@ pub fn generate_serialize_unnamed_fields(
 
             // skip file
             if opts.skip() {
-                None
-            } else if is_struct {
+                return None;
+            }
+
+            let field_ident = if is_struct {
                 // struct Example(u8)
                 // ::binja::serializer::binary_serialize(&self.0, serializer)?;
-                Some(quote! {
-                    ::binja::serializer::binary_serialize(&self.#index, serializer)?;
-                })
+                quote! {
+                    &self.#index
+                }
             } else {
                 // enum Example { A { field: String } }
                 // match self{
                 //     Self::A { field_#index } => {
-                //         ::binja::serializer::binary_serialize(&field_#index, serializer)?,
+                //         ::binja::serializer::binary_serialize(field_#index, serializer)?,
                 //     }
                 let ident = syn::Ident::new(&format!("field_{i}"), proc_macro2::Span::call_site());
-                Some(quote! {
-                    ::binja::serializer::binary_serialize(#ident, serializer)?;
-                })
-            }
+                quote! {
+                    #ident
+                }
+            };
+
+            Some(quote! {
+                ::binja::serializer::binary_serialize(#field_ident, serializer)?;
+            })
         })
         .collect()
 }
