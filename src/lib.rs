@@ -219,3 +219,17 @@ where
 
     T::deserialize(&mut deserializer)
 }
+
+#[macro_export]
+macro_rules! bit {
+    ($bits:expr) => {
+        1 << $bits
+    };
+}
+
+#[macro_export]
+macro_rules! bit_mask {
+    ($bits:expr) => {
+        (1 << $bits) - 1
+    };
+}
