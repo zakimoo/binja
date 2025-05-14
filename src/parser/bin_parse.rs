@@ -139,7 +139,7 @@ where
     {
         let len = parser.container_size()?;
 
-        let mut vec = Vec::with_capacity(len as usize);
+        let mut vec = Vec::with_capacity(len);
 
         for _ in 0..len {
             vec.push(T::binary_parse(parser)?);
@@ -173,7 +173,7 @@ where
     {
         let len = parser.container_size()?;
 
-        let mut map = std::collections::HashMap::with_capacity(len as usize);
+        let mut map = std::collections::HashMap::with_capacity(len);
 
         for _ in 0..len {
             let key = K::binary_parse(parser)?;
@@ -195,7 +195,7 @@ where
     {
         let len = parser.container_size()?;
 
-        let mut set = std::collections::HashSet::with_capacity(len as usize);
+        let mut set = std::collections::HashSet::with_capacity(len);
 
         for _ in 0..len {
             let value = T::binary_parse(parser)?;

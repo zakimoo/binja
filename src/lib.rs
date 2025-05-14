@@ -95,7 +95,6 @@ where
 /// let serialized = to_bytes_with_config(&value, config).unwrap().to_vec();
 /// assert_eq!(serialized, vec![0x00, 0x00, 0x00, 0x2A, 0x01, 0x00, 0x00, 0x00, 0x07]);
 /// ```
-
 pub fn to_bytes_with_config<T>(value: &T, config: Config) -> Result<BytesMut>
 where
     T: BinarySerialize,
@@ -150,7 +149,7 @@ where
 ///     }
 /// );
 /// ```
-pub fn from_bytes<'a, T>(bytes: &'a [u8]) -> Result<T>
+pub fn from_bytes<T>(bytes: &[u8]) -> Result<T>
 where
     T: BinaryParse,
 {
@@ -202,7 +201,7 @@ where
 ///     }
 /// );
 /// ```
-pub fn from_bytes_with_config<'a, T>(bytes: &'a [u8], config: Config) -> Result<T>
+pub fn from_bytes_with_config<T>(bytes: &[u8], config: Config) -> Result<T>
 where
     T: BinaryParse,
 {

@@ -23,15 +23,9 @@ impl<'de> BinaryParser<'de> {
 impl<'de> BinaryParser<'de> {
     pub fn bool(&mut self) -> Result<bool> {
         match self.input.try_get_u8()? {
-            0 => {
-                return Ok(false);
-            }
-            1 => {
-                return Ok(true);
-            }
-            x => {
-                return Err(Error::InvalidBoolValue(x));
-            }
+            0 => Ok(false),
+            1 => Ok(true),
+            x => Err(Error::InvalidBoolValue(x)),
         }
     }
 

@@ -161,8 +161,8 @@ fn parse_untagged_enum(
                 syn::Fields::Unit => {
                     vec![quote! {}]
                 }
-                syn::Fields::Unnamed(fields) => generate_parse_unnamed_fields(&fields, false),
-                syn::Fields::Named(fields) => generate_parse_named_fields(&fields, false),
+                syn::Fields::Unnamed(fields) => generate_parse_unnamed_fields(fields, false),
+                syn::Fields::Named(fields) => generate_parse_named_fields(fields, false),
             };
 
             quote! {
