@@ -3,9 +3,6 @@ name = "binja"
 version = "0.1.0"
 edition = "2024"
 
-[[bin]]
-name = "binja"
-path = "src/main.rs"
 
 [lib]
 name = "binja"
