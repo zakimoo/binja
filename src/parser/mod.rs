@@ -131,7 +131,13 @@ impl<'de> BinaryParser<'de> {
             });
         }
 
-        let result = std::str::from_utf8(&self.input[..4])
+        let len = if self.input.len() < 4 {
+            self.input.len()
+        } else {
+            4
+        };
+
+        let result = std::str::from_utf8(&self.input[..len])
             .map_err(|_| Error::InvalidUtf8 {
                 value: self.input.to_vec(),
             })?
