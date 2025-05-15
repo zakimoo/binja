@@ -7,8 +7,7 @@ use syn::{Expr, parse_quote, token::Eq};
 use crate::{
     attribute::EnumAttributes,
     derive_struct::{
-        generate_parse_named_fields, generate_parse_unnamed_fields,
-        generate_serialize_named_fields, generate_serialize_unnamed_fields,
+        gen_par_named_fields, gen_par_unnamed_fields, gen_ser_named_fields, gen_ser_unnamed_fields,
     },
 };
 
@@ -81,7 +80,7 @@ fn generate_enum_serialize_variants(
                     let pats = quote! { { #(#field_names),* } };
 
                     // code to run
-                    let ser = generate_serialize_named_fields(fields, false);
+                    let ser = gen_ser_named_fields(fields, false);
 
                     (pats, ser)
                 }
@@ -94,7 +93,7 @@ fn generate_enum_serialize_variants(
                     // Self::C(field_0)
                     let pats = quote! { ( #(#idents),* ) };
                     // code to run
-                    let ser = generate_serialize_unnamed_fields(fields, false);
+                    let ser = gen_ser_unnamed_fields(fields, false);
                     (pats, ser)
                 }
 
@@ -161,8 +160,8 @@ fn parse_untagged_enum(
                 syn::Fields::Unit => {
                     vec![quote! {}]
                 }
-                syn::Fields::Unnamed(fields) => generate_parse_unnamed_fields(fields, false),
-                syn::Fields::Named(fields) => generate_parse_named_fields(fields, false),
+                syn::Fields::Unnamed(fields) => gen_par_unnamed_fields(fields, false),
+                syn::Fields::Named(fields) => gen_par_named_fields(fields, false),
             };
 
             quote! {
@@ -204,7 +203,7 @@ fn parse_tagged_enum(
                     #v_lit => Ok(Self::#variant_ident),
                 },
                 syn::Fields::Unnamed(fields) => {
-                    let parsers = generate_parse_unnamed_fields(fields, false);
+                    let parsers = gen_par_unnamed_fields(fields, false);
                     quote! {
                         #v_lit => Ok(Self::#variant_ident{
                             #(#parsers)*
@@ -212,7 +211,7 @@ fn parse_tagged_enum(
                     }
                 }
                 syn::Fields::Named(fields) => {
-                    let parsers = generate_parse_named_fields(fields, false);
+                    let parsers = gen_par_named_fields(fields, false);
                     quote! {
                         #v_lit => Ok(Self::#variant_ident {
                             #(#parsers)*

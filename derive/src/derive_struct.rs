@@ -28,14 +28,14 @@ pub fn generate_struct_binary_serialize(
     let fields_token = match &data.fields {
         // struct Example { field: String }
         syn::Fields::Named(fields_named) => {
-            let serialize_fields = generate_serialize_named_fields(fields_named, true);
+            let serialize_fields = gen_ser_named_fields(fields_named, true);
             quote! {
                 #(#serialize_fields)*
             }
         }
         // struct Example(String) , struct Example(String, String)
         syn::Fields::Unnamed(fields_unnamed) => {
-            let serialize_fields = generate_serialize_unnamed_fields(fields_unnamed, true);
+            let serialize_fields = gen_ser_unnamed_fields(fields_unnamed, true);
             quote! {
                 #(#serialize_fields)*
             }
@@ -76,7 +76,7 @@ pub fn generate_struct_binary_parse(
     let fields_token = match &data.fields {
         // struct Example { field: String }
         syn::Fields::Named(fields_named) => {
-            let parse_fields = generate_parse_named_fields(fields_named, true);
+            let parse_fields = gen_par_named_fields(fields_named, true);
 
             quote! {
                 #(#parse_fields)*
@@ -85,7 +85,7 @@ pub fn generate_struct_binary_parse(
 
         // struct Example(String) , struct Example(String, String)
         syn::Fields::Unnamed(fields_unnamed) => {
-            let parse_fields = generate_parse_unnamed_fields(fields_unnamed, true);
+            let parse_fields = gen_par_unnamed_fields(fields_unnamed, true);
             // 0: binja::parser::binary_parse(parser)?,
             // 1: binja::parser::binary_parse(parser)?,
             // 2: binja::parser::binary_parse(parser)?,
@@ -114,7 +114,7 @@ pub fn generate_struct_binary_parse(
     })
 }
 
-pub fn generate_serialize_named_fields(
+pub fn gen_ser_named_fields(
     fields: &syn::FieldsNamed,
     is_struct: bool,
 ) -> Vec<proc_macro2::TokenStream> {
@@ -176,7 +176,7 @@ pub fn generate_serialize_named_fields(
     code
 }
 
-pub fn generate_parse_named_fields(
+pub fn gen_par_named_fields(
     fields: &syn::FieldsNamed,
     _is_struct: bool,
 ) -> Vec<proc_macro2::TokenStream> {
@@ -209,7 +209,7 @@ pub fn generate_parse_named_fields(
     code
 }
 
-pub fn generate_serialize_unnamed_fields(
+pub fn gen_ser_unnamed_fields(
     fields: &syn::FieldsUnnamed,
     is_struct: bool,
 ) -> Vec<proc_macro2::TokenStream> {
@@ -250,7 +250,7 @@ pub fn generate_serialize_unnamed_fields(
     code
 }
 
-pub fn generate_parse_unnamed_fields(
+pub fn gen_par_unnamed_fields(
     fields: &syn::FieldsUnnamed,
     _is_struct: bool,
 ) -> Vec<proc_macro2::TokenStream> {
