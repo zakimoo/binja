@@ -151,11 +151,7 @@ pub fn generate_enum_binary_parse(data: &syn::DataEnum, attr: &EnumAttributes) -
         });
     }
 
-    let parse_code = if attr.untagged() {
-        parse_untagged_enum(&data.variants)
-    } else {
-        parse_tagged_enum(&data.variants, attr.repr())
-    };
+    let parse_code = gen_par_variants(&data.variants, attr);
 
     TokenStream::from(quote! {
         impl #generics binja::parser::BinaryParse for #name #generics #where_clause{
@@ -166,41 +162,13 @@ pub fn generate_enum_binary_parse(data: &syn::DataEnum, attr: &EnumAttributes) -
     })
 }
 
-fn parse_untagged_enum(
-    variant: &syn::punctuated::Punctuated<syn::Variant, syn::token::Comma>,
-) -> proc_macro2::TokenStream {
-    variant
-        .first()
-        .map(|variant| {
-            let variant_ident = &variant.ident;
-
-            let parsers = match &variant.fields {
-                syn::Fields::Unit => {
-                    vec![quote! {}]
-                }
-                syn::Fields::Unnamed(fields) => gen_par_unnamed_fields(fields, false),
-                syn::Fields::Named(fields) => gen_par_named_fields(fields, false),
-            };
-
-            quote! {
-              Ok(Self::#variant_ident {
-                #(#parsers)*
-              })
-            }
-        })
-        .unwrap_or_else(|| {
-            quote! {
-                Ok(Self)
-            }
-        })
-}
-
-fn parse_tagged_enum(
+fn gen_par_variants(
     variants: &syn::punctuated::Punctuated<syn::Variant, syn::token::Comma>,
-    repr: String,
+    attrs: &EnumAttributes,
 ) -> proc_macro2::TokenStream {
     let mut current_value: isize = -1;
     let mut seen_values = vec![];
+
     let variant_arms = variants
         .iter()
         .map(|variant| {
@@ -210,7 +178,7 @@ fn parse_tagged_enum(
 
             // Create a literal with the correct suffix (e.g., 1i8)
             let v_lit = syn::LitInt::new(
-                &format!("{}{}", current_value, repr),
+                &format!("{}{}", current_value, attrs.repr()),
                 proc_macro2::Span::call_site(),
             );
 
@@ -245,6 +213,7 @@ fn parse_tagged_enum(
         .iter()
         .map(|v| v.to_string())
         .collect::<Vec<_>>();
+
     let expected_str = match expected.len() {
         0 => "".to_string(),
         1 => expected[0].clone(),
@@ -254,10 +223,24 @@ fn parse_tagged_enum(
         }
     };
 
-    let repr_ty: syn::Type = syn::parse_str(&repr).unwrap();
+    let repr_ty: syn::Type = syn::parse_str(&attrs.repr()).unwrap();
+
+    let current_value_code = if attrs.untagged() {
+        let v_lit = syn::LitInt::new(
+            &format!("{}{}", seen_values.first().unwrap_or(&0), attrs.repr()),
+            proc_macro2::Span::call_site(),
+        );
+        quote! {
+            let current_value: #repr_ty = #v_lit;
+        }
+    } else {
+        quote! {
+            let current_value: #repr_ty = ::binja::parser::binary_parse(parser)?;
+        }
+    };
 
     quote! {
-        let current_value: #repr_ty = ::binja::parser::binary_parse(parser)?;
+        #current_value_code
         match current_value{
             #(#variant_arms)*
             x => Err(::binja::error::Error::InvalidVariant {
