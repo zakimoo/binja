@@ -1,18 +1,20 @@
 use binja::{BinaryParse, BinarySerialize, to_bytes};
 
 #[derive(Debug, BinarySerialize, BinaryParse)]
-struct TestStruct {
-    // 1 bit for power status (0 = off, 1 = on)
+struct SeparateBitField {
     #[binja(bits = 1)]
     power: u8,
 
-    // 2 bits for mode (00 = standby, 01 = active, etc.)
     #[binja(bits = 2)]
     mode: u8,
 
-    // 3 bits for error codes (0-7)
-    #[binja(bits = 3)]
+    #[binja(bits = 6)]
     error_code: u8,
+}
+
+#[derive(Debug, BinarySerialize, BinaryParse)]
+struct TestStruct {
+    power: SeparateBitField,
 
     // 2 bits reserved for future use
     #[binja(bits = 5, no_overflow)]
@@ -58,9 +60,11 @@ struct TupleStruct(
 
 fn main() {
     let test_struct = TestStruct {
-        power: 1,
-        mode: 2,
-        error_code: 3,
+        power: SeparateBitField {
+            power: 1,
+            mode: 2,
+            error_code: 3,
+        },
         reserved: 20,
         temperature: 25,
         pressure: 512,

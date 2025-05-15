@@ -115,7 +115,7 @@ fn generate_enum_serialize_variants(
                     (pats, ser)
                 }
 
-                syn::Fields::Unit => (quote! {}, vec![quote! {}]),
+                syn::Fields::Unit => (quote! {}, quote! {}),
             };
 
             let discriminant_code = if untagged {
@@ -130,7 +130,7 @@ fn generate_enum_serialize_variants(
             quote! {
                 Self::#variant_ident #pat => {
                     #discriminant_code
-                    #(#serialize_fields)*
+                    #serialize_fields
                 }
             }
         })

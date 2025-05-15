@@ -1,7 +1,7 @@
 use darling::FromField;
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::parse_quote;
+use syn::{parse_quote, spanned::Spanned};
 
 use crate::{
     attribute::{FieldAttributes, StructAttributes},
@@ -28,30 +28,23 @@ pub fn generate_struct_binary_serialize(
     let fields_token = match &data.fields {
         // struct Example { field: String }
         syn::Fields::Named(fields_named) => {
-            let serialize_fields = gen_ser_fields(&fields_named.named, |f, _| {
+            gen_ser_fields(&fields_named.named, |f, _| {
                 let ident = &f.ident;
                 // struct Example { field: String }
                 // ::binja::serializer::binary_serialize(&self.field, serializer)?;
                 quote! { &self.#ident }
-            });
-
-            quote! {
-                #(#serialize_fields)*
-            }
+            })
         }
         // struct Example(String) , struct Example(String, String)
         syn::Fields::Unnamed(fields_unnamed) => {
-            let serialize_fields = gen_ser_fields(&fields_unnamed.unnamed, |_, i| {
+            gen_ser_fields(&fields_unnamed.unnamed, |_, i| {
                 let index = syn::Index::from(i);
                 // struct Example(u8)
                 // ::binja::serializer::binary_serialize(&self.0, serializer)?;
                 quote! {
                     &self.#index
                 }
-            });
-            quote! {
-                #(#serialize_fields)*
-            }
+            })
         }
         // struct Example;
         syn::Fields::Unit => {
@@ -159,7 +152,7 @@ pub fn generate_struct_binary_parse(
 pub fn gen_ser_fields<F>(
     fields: &syn::punctuated::Punctuated<syn::Field, syn::Token![,]>,
     get_field_expr: F,
-) -> Vec<proc_macro2::TokenStream>
+) -> proc_macro2::TokenStream
 where
     F: Fn(&syn::Field, usize) -> proc_macro2::TokenStream,
 {
@@ -170,6 +163,10 @@ where
     for (i, f) in fields.iter().enumerate() {
         // Check if the field has attributes
         let attrs = FieldAttributes::from_field(f).unwrap_or_default();
+        let maybe_err = attrs.validate(f.span());
+        if let Some(err) = maybe_err {
+            return err.into();
+        }
 
         // skip field
         if attrs.skip() {
@@ -212,7 +209,9 @@ where
     // if last field is a bit field smaller that 8 bits
     flush_bit_field_at_end(&mut code, bit_offset);
 
-    code
+    quote! {
+         #(#code)*
+    }
 }
 
 pub fn gen_par_fields<F1, F2>(
@@ -230,6 +229,10 @@ where
     for (i, f) in fields.iter().enumerate() {
         // Check if the field has attributes
         let attrs = FieldAttributes::from_field(f).unwrap_or_default();
+        let maybe_err = attrs.validate(f.span());
+        if let Some(err) = maybe_err {
+            return err.into();
+        }
         let ident = get_field_expr(f, i);
 
         fields_code.push(ident.clone());
