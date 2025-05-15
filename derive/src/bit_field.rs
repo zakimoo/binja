@@ -13,7 +13,7 @@ pub fn gen_bit_field_serialization(
     if !allow_overflow {
         // check if the field is too big
         code.push(quote! {
-            if #field_expr > binja::bit_mask!(#bits) {
+            if( #field_expr >> #bits) != 0 {
                 return Err(::binja::error::Error::Overflow{
                     value: format!("{:#x}", #field_expr),
                     max: format!("{:#x}", binja::bit_mask!(#bits) ),

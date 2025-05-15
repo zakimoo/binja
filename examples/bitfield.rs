@@ -1,6 +1,6 @@
-use binja::{BinarySerialize, to_bytes};
+use binja::{BinaryParse, BinarySerialize, to_bytes};
 
-#[derive(Debug, BinarySerialize)]
+#[derive(Debug, BinarySerialize, BinaryParse)]
 struct TestStruct {
     // 1 bit for power status (0 = off, 1 = on)
     #[binja(bits = 1)]
@@ -44,8 +44,8 @@ struct TestStruct {
 
 fn main() {
     let test_struct = TestStruct {
-        power: 1,
-        mode: 2,
+        power: 0,
+        mode: 4,
         error_code: 3,
         reserved: 20,
         temperature: 25,
@@ -53,7 +53,7 @@ fn main() {
         altitude: 2048,
         voltage: 15,
         current: 10,
-        checksum: 63,
+        checksum: 64,
     };
 
     // Serialize the struct to bytes
