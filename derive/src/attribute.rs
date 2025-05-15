@@ -55,10 +55,22 @@ pub struct FieldAttributes {
 
     // #[binja(skip)]
     pub skip: Option<()>,
+
+    pub bits: Option<u8>,
+
+    pub no_overflow: Option<()>,
 }
 
 impl FieldAttributes {
     pub fn skip(&self) -> bool {
         self.skip.is_some()
+    }
+
+    pub fn bits(&self) -> Option<u8> {
+        self.bits
+    }
+
+    pub fn no_overflow(&self) -> bool {
+        self.no_overflow.is_some()
     }
 }

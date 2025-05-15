@@ -3,7 +3,10 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::parse_quote;
 
-use crate::attribute::{FieldAttributes, StructAttributes};
+use crate::{
+    attribute::{FieldAttributes, StructAttributes},
+    bit_field::{flush_bit_field_at_end, flush_bit_field_if_needed, gen_bit_field_serialization},
+};
 
 pub fn generate_struct_binary_serialize(
     data: &syn::DataStruct,
@@ -117,6 +120,10 @@ pub fn generate_serialize_named_fields(
 ) -> Vec<proc_macro2::TokenStream> {
     let mut code = Vec::new();
 
+    code.push(quote! { let mut bit_field = 0u8; });
+
+    let mut bit_offset = 0u8;
+
     for f in fields.named.iter() {
         // Check if the field has attributes
         let attrs = FieldAttributes::from_field(f).unwrap_or_default();
@@ -130,28 +137,41 @@ pub fn generate_serialize_named_fields(
         let field_expr = if is_struct {
             // struct Example { field: String }
             // ::binja::serializer::binary_serialize(&self.field, serializer)?;
-            quote! {
-                &self.#ident
-            }
+            quote! { &self.#ident }
         } else {
             // enum Example { A { field: String } }
             // match self{
             //     Self::A { field } => {
             //         ::binja::serializer::binary_serialize(field, serializer)?,
             //     }
-            quote! {
-                #ident
-            }
+            quote! { #ident }
         };
 
-        // if let Some(_bits) = opts.bits() {
-        //     None
-        // } else {
-        code.push(quote! {
-            ::binja::serializer::binary_serialize(#field_expr, serializer)?;
-        })
-        // }
+        // if field have #[binja(bits = 6)]
+        if let Some(bits) = attrs.bits() {
+            let allow_overflow = !attrs.no_overflow();
+            gen_bit_field_serialization(
+                &mut code,
+                &field_expr,
+                bits,
+                &mut bit_offset,
+                allow_overflow,
+            );
+        } else {
+            // if last field is a bit field smaller that 8 bits
+            // current field is not a bit field
+            // flush last bit field
+            flush_bit_field_if_needed(&mut code, &mut bit_offset);
+
+            // serialize the current field
+            code.push(quote! {
+                ::binja::serializer::binary_serialize(#field_expr, serializer)?;
+            })
+        }
     }
+
+    // if last field is a bit field smaller that 8 bits
+    flush_bit_field_at_end(&mut code, bit_offset);
 
     code
 }
@@ -176,12 +196,14 @@ pub fn generate_parse_named_fields(
             // skipped fields are defaulted
             code.push(quote! {
                 #ident: Default::default(),
-            })
-        } else {
-            code.push(quote! {
-                #ident: ::binja::parser::binary_parse(parser)?,
-            })
+            });
+
+            continue;
         }
+
+        code.push(quote! {
+            #ident: ::binja::parser::binary_parse(parser)?,
+        });
     }
 
     code

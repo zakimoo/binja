@@ -61,6 +61,11 @@ pub enum Error {
     InvalidUtf8 {
         value: Vec<u8>,
     },
+
+    Overflow {
+        value: String,
+        max: String,
+    },
 }
 
 // Implementing the standard Error trait for the custom Error enum
