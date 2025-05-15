@@ -129,10 +129,10 @@ pub fn generate_struct_binary_parse(
 
 pub fn gen_ser_fields<F>(
     fields: &syn::punctuated::Punctuated<syn::Field, syn::Token![,]>,
-    mut get_field_expr: F,
+    get_field_expr: F,
 ) -> Vec<proc_macro2::TokenStream>
 where
-    F: FnMut(&syn::Field, usize) -> proc_macro2::TokenStream,
+    F: Fn(&syn::Field, usize) -> proc_macro2::TokenStream,
 {
     let mut code = Vec::new();
     let mut bit_field_declared = false;
