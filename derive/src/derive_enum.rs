@@ -6,9 +6,7 @@ use syn::{Expr, parse_quote, token::Eq};
 
 use crate::{
     attribute::EnumAttributes,
-    derive_struct::{
-        gen_par_named_fields, gen_par_unnamed_fields, gen_ser_named_fields, gen_ser_unnamed_fields,
-    },
+    derive_struct::{gen_par_named_fields, gen_par_unnamed_fields, gen_ser_fields},
 };
 
 pub fn generate_enum_binary_serialize(data: &syn::DataEnum, attr: &EnumAttributes) -> TokenStream {
@@ -80,7 +78,16 @@ fn generate_enum_serialize_variants(
                     let pats = quote! { { #(#field_names),* } };
 
                     // code to run
-                    let ser = gen_ser_named_fields(fields, false);
+                    let ser = gen_ser_fields(&fields.named, |f, _| {
+                        let ident = &f.ident;
+
+                        // enum Example { A { field: String } }
+                        // match self{
+                        //     Self::A { field } => {
+                        //         ::binja::serializer::binary_serialize(field, serializer)?,
+                        //     }
+                        quote! { #ident }
+                    });
 
                     (pats, ser)
                 }
@@ -93,7 +100,18 @@ fn generate_enum_serialize_variants(
                     // Self::C(field_0)
                     let pats = quote! { ( #(#idents),* ) };
                     // code to run
-                    let ser = gen_ser_unnamed_fields(fields, false);
+                    let ser = gen_ser_fields(&fields.unnamed, |_, i| {
+                        // enum Example { A { field: String } }
+                        // match self{
+                        //     Self::A { field_#index } => {
+                        //         ::binja::serializer::binary_serialize(field_#index, serializer)?,
+                        //     }
+                        let ident =
+                            syn::Ident::new(&format!("field_{i}"), proc_macro2::Span::call_site());
+                        quote! {
+                            #ident
+                        }
+                    });
                     (pats, ser)
                 }
 

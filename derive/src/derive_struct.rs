@@ -28,14 +28,27 @@ pub fn generate_struct_binary_serialize(
     let fields_token = match &data.fields {
         // struct Example { field: String }
         syn::Fields::Named(fields_named) => {
-            let serialize_fields = gen_ser_named_fields(fields_named, true);
+            let serialize_fields = gen_ser_fields(&fields_named.named, |f, _| {
+                let ident = &f.ident;
+                // struct Example { field: String }
+                // ::binja::serializer::binary_serialize(&self.field, serializer)?;
+                return quote! { &self.#ident };
+            });
+
             quote! {
                 #(#serialize_fields)*
             }
         }
         // struct Example(String) , struct Example(String, String)
         syn::Fields::Unnamed(fields_unnamed) => {
-            let serialize_fields = gen_ser_unnamed_fields(fields_unnamed, true);
+            let serialize_fields = gen_ser_fields(&fields_unnamed.unnamed, |_, i| {
+                let index = syn::Index::from(i);
+                // struct Example(u8)
+                // ::binja::serializer::binary_serialize(&self.0, serializer)?;
+                quote! {
+                    &self.#index
+                }
+            });
             quote! {
                 #(#serialize_fields)*
             }
@@ -114,42 +127,39 @@ pub fn generate_struct_binary_parse(
     })
 }
 
-pub fn gen_ser_named_fields(
-    fields: &syn::FieldsNamed,
-    is_struct: bool,
-) -> Vec<proc_macro2::TokenStream> {
+pub fn gen_ser_fields<F>(
+    fields: &syn::punctuated::Punctuated<syn::Field, syn::Token![,]>,
+    mut get_field_expr: F,
+) -> Vec<proc_macro2::TokenStream>
+where
+    F: FnMut(&syn::Field, usize) -> proc_macro2::TokenStream,
+{
     let mut code = Vec::new();
-
-    code.push(quote! { let mut bit_field = 0u8; });
-
+    let mut bit_field_declared = false;
     let mut bit_offset = 0u8;
 
-    for f in fields.named.iter() {
+    for (i, f) in fields.iter().enumerate() {
         // Check if the field has attributes
         let attrs = FieldAttributes::from_field(f).unwrap_or_default();
-        let ident = &f.ident;
 
         // skip field
         if attrs.skip() {
             continue;
         }
 
-        let field_expr = if is_struct {
-            // struct Example { field: String }
-            // ::binja::serializer::binary_serialize(&self.field, serializer)?;
-            quote! { &self.#ident }
-        } else {
-            // enum Example { A { field: String } }
-            // match self{
-            //     Self::A { field } => {
-            //         ::binja::serializer::binary_serialize(field, serializer)?,
-            //     }
-            quote! { #ident }
-        };
+        let field_expr = get_field_expr(f, i);
 
         // if field have #[binja(bits = 6)]
         if let Some(bits) = attrs.bits() {
+            // only construct bit field if it is not already constructed
+            // if there is a field with bits
+            if !bit_field_declared {
+                code.push(quote! { let mut bit_field = 0u8; });
+                bit_field_declared = true;
+            }
+
             let allow_overflow = !attrs.no_overflow();
+
             gen_bit_field_serialization(
                 &mut code,
                 &field_expr,
@@ -206,47 +216,6 @@ pub fn gen_par_named_fields(
         });
     }
 
-    code
-}
-
-pub fn gen_ser_unnamed_fields(
-    fields: &syn::FieldsUnnamed,
-    is_struct: bool,
-) -> Vec<proc_macro2::TokenStream> {
-    let mut code = Vec::new();
-
-    for (i, f) in fields.unnamed.iter().enumerate() {
-        // Check if the field has attributes
-        let attrs = FieldAttributes::from_field(f).unwrap_or_default();
-        let index = syn::Index::from(i);
-
-        // skip field
-        if attrs.skip() {
-            continue;
-        }
-
-        let field_expr = if is_struct {
-            // struct Example(u8)
-            // ::binja::serializer::binary_serialize(&self.0, serializer)?;
-            quote! {
-                &self.#index
-            }
-        } else {
-            // enum Example { A { field: String } }
-            // match self{
-            //     Self::A { field_#index } => {
-            //         ::binja::serializer::binary_serialize(field_#index, serializer)?,
-            //     }
-            let ident = syn::Ident::new(&format!("field_{i}"), proc_macro2::Span::call_site());
-            quote! {
-                #ident
-            }
-        };
-
-        code.push(quote! {
-            ::binja::serializer::binary_serialize(#field_expr, serializer)?;
-        })
-    }
     code
 }
 
