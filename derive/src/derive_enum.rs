@@ -6,7 +6,7 @@ use syn::{Expr, parse_quote, token::Eq};
 
 use crate::{
     attribute::EnumAttributes,
-    derive_struct::{gen_par_named_fields, gen_par_unnamed_fields, gen_ser_fields},
+    derive_struct::{gen_par_fields, gen_ser_fields},
 };
 
 pub fn generate_enum_binary_serialize(data: &syn::DataEnum, attr: &EnumAttributes) -> TokenStream {
@@ -189,20 +189,68 @@ fn gen_par_variants(
                     #v_lit => Ok(Self::#variant_ident),
                 },
                 syn::Fields::Unnamed(fields) => {
-                    let parsers = gen_par_unnamed_fields(fields, false);
+                    let field_code = gen_par_fields(
+                        &fields.unnamed,
+                        |_, i| {
+                            let ident = syn::Ident::new(
+                                &format!("field_{i}"),
+                                proc_macro2::Span::call_site(),
+                            );
+                            // enum Example { A { field: String } }
+                            // match self{
+                            //     Self::A { field_#index } => {
+                            //         ::binja::serializer::binary_serialize(field_#index, serializer)?,
+                            //     }
+                            quote! { #ident }
+                        },
+                        |fields| {
+                            quote! {
+                                Ok(Self::#variant_ident(
+                                    #fields
+                                ))
+                            }
+                        },
+                    );
+
                     quote! {
-                        #v_lit => Ok(Self::#variant_ident{
-                            #(#parsers)*
-                        }),
+                        #v_lit => {
+                            #field_code
+                        }
                     }
                 }
                 syn::Fields::Named(fields) => {
-                    let parsers = gen_par_named_fields(fields, false);
+                    let field_code = gen_par_fields(
+                        &fields.named,
+                        |f, _| {
+                            let ident = f.ident.as_ref().unwrap();
+                            // enum Example { A { field: String } }
+                            // match self{
+                            //     Self::A { field_#index } => {
+                            //         ::binja::serializer::binary_serialize(field_#index, serializer)?,
+                            //     }
+                            quote! { #ident }
+                        },
+                        |fields| {
+                            quote! {
+                                Ok(Self::#variant_ident{
+                                    #fields
+                                })
+                            }
+                        },
+                    );
+
                     quote! {
-                        #v_lit => Ok(Self::#variant_ident {
-                            #(#parsers)*
-                        }),
+                         #v_lit => {
+                            #field_code
+                         }
                     }
+
+                    // let parsers = gen_par_named_fields(fields, false);
+                    // quote! {
+                    //     #v_lit => Ok(Self::#variant_ident {
+                    //         #(#parsers)*
+                    //     }),
+                    // }
                 }
             }
         })

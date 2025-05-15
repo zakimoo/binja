@@ -66,7 +66,7 @@ pub fn flush_bit_field_if_needed(code: &mut Vec<proc_macro2::TokenStream>, bit_o
             bit_field = 0u8;
         });
         // align to next byte
-        *bit_offset = (*bit_offset + 7) / 8 * 8;
+        *bit_offset = (*bit_offset).div_ceil(8) * 8;
     }
 }
 

@@ -32,7 +32,7 @@ pub fn generate_struct_binary_serialize(
                 let ident = &f.ident;
                 // struct Example { field: String }
                 // ::binja::serializer::binary_serialize(&self.field, serializer)?;
-                return quote! { &self.#ident };
+                quote! { &self.#ident }
             });
 
             quote! {
@@ -86,42 +86,71 @@ pub fn generate_struct_binary_parse(
         });
     }
 
-    let fields_token = match &data.fields {
+    let code = match &data.fields {
         // struct Example { field: String }
-        syn::Fields::Named(fields_named) => {
-            let parse_fields = gen_par_named_fields(fields_named, true);
-
-            quote! {
-                #(#parse_fields)*
-            }
-        }
+        syn::Fields::Named(fields_named) => gen_par_fields(
+            &fields_named.named,
+            |f, _| {
+                let ident = &f.ident;
+                // struct Example { field: String }
+                // Ok(Self{
+                //     field: Default::default(), // skipped fields are defaulted for parsing
+                //     field2: binja::parser::binary_parse(parser)?,
+                // })
+                quote! {
+                    #ident
+                }
+            },
+            |fields| {
+                // struct Example { field: String }
+                // Ok(Self{
+                //     field: Default::default(), // skipped fields are defaulted for parsing
+                //     field2: binja::parser::binary_parse(parser)?,
+                // })
+                quote! {
+                    Ok(Self {
+                        #fields
+                    })
+                }
+            },
+        ),
 
         // struct Example(String) , struct Example(String, String)
-        syn::Fields::Unnamed(fields_unnamed) => {
-            let parse_fields = gen_par_unnamed_fields(fields_unnamed, true);
-            // 0: binja::parser::binary_parse(parser)?,
-            // 1: binja::parser::binary_parse(parser)?,
-            // 2: binja::parser::binary_parse(parser)?,
-            quote! {
-                #(#parse_fields)*
-            }
-        }
+        syn::Fields::Unnamed(fields_unnamed) => gen_par_fields(
+            &fields_unnamed.unnamed,
+            |_, i| {
+                let ident = syn::Ident::new(&format!("field_{i}"), proc_macro2::Span::call_site());
+                // struct Example { field: String }
+                // Ok(Self{
+                //     field: Default::default(), // skipped fields are defaulted for parsing
+                //     field2: binja::parser::binary_parse(parser)?,
+                // })
+                quote! {
+                    #ident
+                }
+            },
+            |fields| {
+                // struct Example { field: String }
+                // Ok(Self{
+                //     field: Default::default(), // skipped fields are defaulted for parsing
+                //     field2: binja::parser::binary_parse(parser)?,
+                // })
+                quote! {
+                    Ok(Self (
+                        #fields
+                    ))
+                }
+            },
+        ),
 
         // struct Example;
-        syn::Fields::Unit => {
-            quote! {}
-        }
+        syn::Fields::Unit => quote! {Ok(Self {})},
     };
 
     TokenStream::from(quote! {
         impl #generics binja::parser::BinaryParse for #name #generics #where_clause{
             fn binary_parse(parser: &mut ::binja::parser::BinaryParser) -> binja::error::Result<Self> {
-                // Ok(Self{
-                // field: binja::parser::binary_parse(parser)?,
-                // })
-                Ok(Self{
-                    #fields_token
-                })
+               #code
             }
         }
     })
@@ -186,15 +215,24 @@ where
     code
 }
 
-pub fn gen_par_named_fields(
-    fields: &syn::FieldsNamed,
-    _is_struct: bool,
-) -> Vec<proc_macro2::TokenStream> {
+pub fn gen_par_fields<F1, F2>(
+    fields: &syn::punctuated::Punctuated<syn::Field, syn::Token![,]>,
+    get_field_expr: F1,
+    get_return_code: F2,
+) -> proc_macro2::TokenStream
+where
+    F1: Fn(&syn::Field, usize) -> proc_macro2::TokenStream,
+    F2: Fn(&proc_macro2::TokenStream) -> proc_macro2::TokenStream,
+{
     let mut code = Vec::new();
-    for f in fields.named.iter() {
+    let mut fields_code = Vec::new();
+
+    for (i, f) in fields.iter().enumerate() {
         // Check if the field has attributes
         let attrs = FieldAttributes::from_field(f).unwrap_or_default();
-        let ident = &f.ident;
+        let ident = get_field_expr(f, i);
+
+        fields_code.push(ident.clone());
 
         // #[derive(BinaryParse)]
         // struct Example { #[binja(skip)]  field: String ,field2: u8 }
@@ -205,45 +243,23 @@ pub fn gen_par_named_fields(
         if attrs.skip() {
             // skipped fields are defaulted
             code.push(quote! {
-                #ident: Default::default(),
+              let  #ident= Default::default();
             });
 
             continue;
         }
 
         code.push(quote! {
-            #ident: ::binja::parser::binary_parse(parser)?,
+           let #ident= ::binja::parser::binary_parse(parser)?;
         });
     }
 
-    code
-}
+    let return_code = get_return_code(&quote! {
+       #(#fields_code),*
+    });
 
-pub fn gen_par_unnamed_fields(
-    fields: &syn::FieldsUnnamed,
-    _is_struct: bool,
-) -> Vec<proc_macro2::TokenStream> {
-    let mut code = Vec::new();
-
-    for (i, f) in fields.unnamed.iter().enumerate() {
-        // Check if the field has attributes
-        let attrs = FieldAttributes::from_field(f).unwrap_or_default();
-        let index = syn::Index::from(i);
-        // #[derive(BinaryParse)]
-        // struct Example(#[binja(skip)] u8, u32)
-        // Ok(Self(
-        //    0: Default::default(), // skipped fields are defaulted for parsing
-        //     1: ::binja::parser::binary_parse(parser)?,
-        // ))
-        if attrs.skip() {
-            code.push(quote! {
-                #index: Default::default(),
-            })
-        } else {
-            code.push(quote! {
-                #index: ::binja::parser::binary_parse(parser)?,
-            })
-        }
+    quote! {
+        #(#code)*
+        #return_code
     }
-    code
 }
