@@ -1,6 +1,6 @@
 use std::vec;
 
-use proc_macro::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{Expr, parse_quote, token::Eq};
 
@@ -9,7 +9,10 @@ use crate::{
     derive_struct::{gen_par_fields, gen_ser_fields},
 };
 
-pub fn generate_enum_binary_serialize(data: &syn::DataEnum, attr: &EnumAttributes) -> TokenStream {
+pub fn generate_enum_binary_serialize(
+    data: &syn::DataEnum,
+    attr: &EnumAttributes,
+) -> syn::Result<TokenStream> {
     let name = &attr.ident;
     let generics = &attr.generics;
     let mut gen_clone = generics.clone();
@@ -23,24 +26,26 @@ pub fn generate_enum_binary_serialize(data: &syn::DataEnum, attr: &EnumAttribute
         });
     }
 
-    let variant_arms = generate_enum_serialize_variants(&data.variants, attr);
+    let variant_arms = generate_enum_serialize_variants(&data.variants, attr)?;
 
-    TokenStream::from(quote! {
+    let expand = quote! {
         impl #generics binja::serializer::BinarySerialize for #name #generics #where_clause{
             fn binary_serialize(&self, serializer: &mut binja::serializer::BinarySerializer) -> binja::error::Result<()> {
                 match self {
-                    #(#variant_arms),*
+                    #variant_arms
                 }
                 Ok(())
             }
         }
-    })
+    };
+
+    Ok(TokenStream::from(expand))
 }
 
 fn generate_enum_serialize_variants(
     variants: &syn::punctuated::Punctuated<syn::Variant, syn::token::Comma>,
     attr: &EnumAttributes,
-) -> Vec<proc_macro2::TokenStream> {
+) -> syn::Result<TokenStream> {
     let repr = attr.repr();
     let untagged = attr.untagged();
     let mut current_value: isize = -1;
@@ -53,10 +58,7 @@ fn generate_enum_serialize_variants(
         get_enum_value(&mut current_value, &variant.discriminant);
 
         // Create a literal with the correct suffix (e.g., 1i8)
-        let v_lit = syn::LitInt::new(
-            &format!("{}{}", current_value, repr),
-            proc_macro2::Span::call_site(),
-        );
+        let v_lit = syn::LitInt::new(&format!("{}{}", current_value, repr), Span::call_site());
 
         // enum TestEnum {
         //     AA,
@@ -87,13 +89,13 @@ fn generate_enum_serialize_variants(
                     //         ::binja::serializer::binary_serialize(field, serializer)?,
                     //     }
                     quote! { #ident }
-                });
+                })?;
 
                 (pats, ser)
             }
             syn::Fields::Unnamed(fields) => {
                 let idents: Vec<syn::Ident> = (0..fields.unnamed.len())
-                    .map(|i| syn::Ident::new(&format!("field_{i}"), proc_macro2::Span::call_site()))
+                    .map(|i| syn::Ident::new(&format!("field_{i}"), Span::call_site()))
                     .collect();
                 // Self::C(field_0)
                 let pats = quote! { ( #(#idents),* ) };
@@ -104,12 +106,11 @@ fn generate_enum_serialize_variants(
                     //     Self::A { field_#index } => {
                     //         ::binja::serializer::binary_serialize(field_#index, serializer)?,
                     //     }
-                    let ident =
-                        syn::Ident::new(&format!("field_{i}"), proc_macro2::Span::call_site());
+                    let ident = syn::Ident::new(&format!("field_{i}"), Span::call_site());
                     quote! {
                         #ident
                     }
-                });
+                })?;
                 (pats, ser)
             }
 
@@ -133,10 +134,17 @@ fn generate_enum_serialize_variants(
         });
     }
 
-    code
+    let expand = quote! {
+        #(#code)*
+    };
+
+    Ok(expand)
 }
 
-pub fn generate_enum_binary_parse(data: &syn::DataEnum, attr: &EnumAttributes) -> TokenStream {
+pub fn generate_enum_binary_parse(
+    data: &syn::DataEnum,
+    attr: &EnumAttributes,
+) -> syn::Result<TokenStream> {
     let name = &attr.ident;
     let generics = &attr.generics;
     let mut gen_clone = generics.clone();
@@ -150,21 +158,23 @@ pub fn generate_enum_binary_parse(data: &syn::DataEnum, attr: &EnumAttributes) -
         });
     }
 
-    let parse_code = gen_par_variants(&data.variants, attr);
+    let parse_code = gen_par_variants(&data.variants, attr)?;
 
-    TokenStream::from(quote! {
+    let expand = quote! {
         impl #generics binja::parser::BinaryParse for #name #generics #where_clause{
             fn binary_parse(parser: &mut binja::parser::BinaryParser) -> binja::error::Result<Self> {
                 #parse_code
             }
         }
-    })
+    };
+
+    Ok(expand.into())
 }
 
 fn gen_par_variants(
     variants: &syn::punctuated::Punctuated<syn::Variant, syn::token::Comma>,
     attrs: &EnumAttributes,
-) -> proc_macro2::TokenStream {
+) -> syn::Result<TokenStream> {
     let mut current_value: isize = -1;
     let mut seen_values = vec![];
 
@@ -178,7 +188,7 @@ fn gen_par_variants(
         // Create a literal with the correct suffix (e.g., 1i8)
         let v_lit = syn::LitInt::new(
             &format!("{}{}", current_value, attrs.repr()),
-            proc_macro2::Span::call_site(),
+            Span::call_site(),
         );
 
         seen_values.push(current_value);
@@ -191,8 +201,7 @@ fn gen_par_variants(
                 let field_code = gen_par_fields(
                     &fields.unnamed,
                     |_, i| {
-                        let ident =
-                            syn::Ident::new(&format!("field_{i}"), proc_macro2::Span::call_site());
+                        let ident = syn::Ident::new(&format!("field_{i}"), Span::call_site());
                         // enum Example { A { field: String } }
                         // match self{
                         //     Self::A { field_#index } => {
@@ -207,7 +216,7 @@ fn gen_par_variants(
                             ))
                         }
                     },
-                );
+                )?;
 
                 variant_arms.push(quote! {
                     #v_lit => {
@@ -234,7 +243,7 @@ fn gen_par_variants(
                             })
                         }
                     },
-                );
+                )?;
 
                 variant_arms.push(quote! {
                      #v_lit => {
@@ -272,7 +281,7 @@ fn gen_par_variants(
     let current_value_code = if attrs.untagged() {
         let v_lit = syn::LitInt::new(
             &format!("{}{}", seen_values.first().unwrap_or(&0), attrs.repr()),
-            proc_macro2::Span::call_site(),
+            Span::call_site(),
         );
         quote! {
             let current_value: #repr_ty = #v_lit;
@@ -283,7 +292,7 @@ fn gen_par_variants(
         }
     };
 
-    quote! {
+    let expand = quote! {
         #current_value_code
         match current_value{
             #(#variant_arms)*
@@ -292,7 +301,9 @@ fn gen_par_variants(
                 found: format!("{}", x),
             }),
         }
-    }
+    };
+
+    Ok(expand)
 }
 
 fn get_enum_value(current_value: &mut isize, discriminant: &Option<(Eq, Expr)>) {

@@ -22,14 +22,20 @@ pub fn derive_binary_serialize(input: TokenStream) -> TokenStream {
                 Err(e) => return e.write_errors().into(),
             };
 
-            generate_struct_binary_serialize(data, &attr)
+            match generate_struct_binary_serialize(data, &attr) {
+                Ok(val) => val.into(),
+                Err(err) => err.to_compile_error().into(),
+            }
         }
         syn::Data::Enum(data) => {
             let attr = match EnumAttributes::from_derive_input(&input) {
                 Ok(c) => c,
                 Err(e) => return e.write_errors().into(),
             };
-            generate_enum_binary_serialize(data, &attr)
+            match generate_enum_binary_serialize(data, &attr) {
+                Ok(val) => val.into(),
+                Err(err) => err.to_compile_error().into(),
+            }
         }
         syn::Data::Union(_) => todo!(),
     }
@@ -46,14 +52,20 @@ pub fn derive_binary_parse(input: TokenStream) -> TokenStream {
                 Err(e) => return e.write_errors().into(),
             };
 
-            generate_struct_binary_parse(data, &attr)
+            match generate_struct_binary_parse(data, &attr) {
+                Ok(val) => val.into(),
+                Err(err) => err.to_compile_error().into(),
+            }
         }
         syn::Data::Enum(data) => {
             let attr = match EnumAttributes::from_derive_input(&input) {
                 Ok(c) => c,
                 Err(e) => return e.write_errors().into(),
             };
-            generate_enum_binary_parse(data, &attr)
+            match generate_enum_binary_parse(data, &attr) {
+                Ok(val) => val.into(),
+                Err(err) => err.to_compile_error().into(),
+            }
         }
         syn::Data::Union(_) => todo!(),
     }

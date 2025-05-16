@@ -1,5 +1,5 @@
 use darling::FromField;
-use proc_macro::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{parse_quote, spanned::Spanned};
 
@@ -11,7 +11,7 @@ use crate::{
 pub fn generate_struct_binary_serialize(
     data: &syn::DataStruct,
     attributes: &StructAttributes,
-) -> TokenStream {
+) -> syn::Result<TokenStream> {
     let name = &attributes.ident;
     let generics = &attributes.generics;
     let mut gen_clone = generics.clone();
@@ -33,7 +33,7 @@ pub fn generate_struct_binary_serialize(
                 // struct Example { field: String }
                 // ::binja::serializer::binary_serialize(&self.field, serializer)?;
                 quote! { &self.#ident }
-            })
+            })?
         }
         // struct Example(String) , struct Example(String, String)
         syn::Fields::Unnamed(fields_unnamed) => {
@@ -44,7 +44,7 @@ pub fn generate_struct_binary_serialize(
                 quote! {
                     &self.#index
                 }
-            })
+            })?
         }
         // struct Example;
         syn::Fields::Unit => {
@@ -52,20 +52,22 @@ pub fn generate_struct_binary_serialize(
         }
     };
 
-    TokenStream::from(quote! {
+    let expand = quote! {
         impl #generics binja::serializer::BinarySerialize for #name #generics #where_clause{
             fn binary_serialize(&self, serializer: &mut ::binja::serializer::BinarySerializer) -> binja::error::Result<()> {
                 #fields_token
                 Ok(())
             }
         }
-    })
+    };
+
+    Ok(expand.into())
 }
 
 pub fn generate_struct_binary_parse(
     data: &syn::DataStruct,
     attributes: &StructAttributes,
-) -> TokenStream {
+) -> syn::Result<TokenStream> {
     let name = &attributes.ident;
     let generics = &attributes.generics;
     let mut gen_clone = generics.clone();
@@ -106,13 +108,13 @@ pub fn generate_struct_binary_parse(
                     })
                 }
             },
-        ),
+        )?,
 
         // struct Example(String) , struct Example(String, String)
         syn::Fields::Unnamed(fields_unnamed) => gen_par_fields(
             &fields_unnamed.unnamed,
             |_, i| {
-                let ident = syn::Ident::new(&format!("field_{i}"), proc_macro2::Span::call_site());
+                let ident = syn::Ident::new(&format!("field_{i}"), Span::call_site());
                 // struct Example { field: String }
                 // Ok(Self{
                 //     field: Default::default(), // skipped fields are defaulted for parsing
@@ -134,27 +136,29 @@ pub fn generate_struct_binary_parse(
                     ))
                 }
             },
-        ),
+        )?,
 
         // struct Example;
         syn::Fields::Unit => quote! {Ok(Self {})},
     };
 
-    TokenStream::from(quote! {
+    let expand = quote! {
         impl #generics binja::parser::BinaryParse for #name #generics #where_clause{
             fn binary_parse(parser: &mut ::binja::parser::BinaryParser) -> binja::error::Result<Self> {
-               #code
+                #code
             }
         }
-    })
+    };
+
+    Ok(expand.into())
 }
 
 pub fn gen_ser_fields<F>(
     fields: &syn::punctuated::Punctuated<syn::Field, syn::Token![,]>,
     get_field_expr: F,
-) -> proc_macro2::TokenStream
+) -> syn::Result<TokenStream>
 where
-    F: Fn(&syn::Field, usize) -> proc_macro2::TokenStream,
+    F: Fn(&syn::Field, usize) -> TokenStream,
 {
     let mut code = Vec::new();
     let mut bit_field_declared = false;
@@ -163,10 +167,7 @@ where
     for (i, f) in fields.iter().enumerate() {
         // Check if the field has attributes
         let attrs = FieldAttributes::from_field(f).unwrap_or_default();
-        let maybe_err = attrs.validate(f.span());
-        if let Some(err) = maybe_err {
-            return err.into();
-        }
+        attrs.validate(f.span())?;
 
         // skip field
         if attrs.skip() {
@@ -209,19 +210,19 @@ where
     // if last field is a bit field smaller that 8 bits
     flush_bit_field_at_end(&mut code, bit_offset);
 
-    quote! {
+    Ok(quote! {
          #(#code)*
-    }
+    })
 }
 
 pub fn gen_par_fields<F1, F2>(
     fields: &syn::punctuated::Punctuated<syn::Field, syn::Token![,]>,
     get_field_expr: F1,
     get_return_code: F2,
-) -> proc_macro2::TokenStream
+) -> syn::Result<TokenStream>
 where
-    F1: Fn(&syn::Field, usize) -> proc_macro2::TokenStream,
-    F2: Fn(&proc_macro2::TokenStream) -> proc_macro2::TokenStream,
+    F1: Fn(&syn::Field, usize) -> TokenStream,
+    F2: Fn(&TokenStream) -> TokenStream,
 {
     let mut code = Vec::new();
     let mut fields_code = Vec::new();
@@ -229,10 +230,8 @@ where
     for (i, f) in fields.iter().enumerate() {
         // Check if the field has attributes
         let attrs = FieldAttributes::from_field(f).unwrap_or_default();
-        let maybe_err = attrs.validate(f.span());
-        if let Some(err) = maybe_err {
-            return err.into();
-        }
+        attrs.validate(f.span())?;
+
         let ident = get_field_expr(f, i);
 
         fields_code.push(ident.clone());
@@ -261,8 +260,8 @@ where
        #(#fields_code),*
     });
 
-    quote! {
+    Ok(quote! {
         #(#code)*
         #return_code
-    }
+    })
 }

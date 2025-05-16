@@ -74,24 +74,27 @@ impl FieldAttributes {
         self.no_overflow.is_some()
     }
 
-    pub fn validate(&self, span: proc_macro2::Span) -> Option<proc_macro2::TokenStream> {
+    pub fn validate(&self, span: proc_macro2::Span) -> syn::Result<()> {
         if self.skip.is_some() && self.bits.is_some() {
-            let err = syn::Error::new(span, "Field cannot be both `skip` and have `bits = N`");
-            return err.to_compile_error().into();
+            return Err(syn::Error::new(
+                span,
+                "Field cannot be both `skip` and have `bits = N`",
+            ));
         }
 
         if let Some(bits) = self.bits {
             if bits == 0 {
-                let err = syn::Error::new(span, "bits must be greater than 0");
-                return err.to_compile_error().into();
+                return Err(syn::Error::new(span, "bits must be greater than 0"));
             }
         }
 
         if self.no_overflow.is_some() && self.bits.is_none() {
-            let err = syn::Error::new(span, "no_overflow can only be used with a bits attribute");
-            return err.to_compile_error().into();
+            return Err(syn::Error::new(
+                span,
+                "no_overflow can only be used with a bits attribute",
+            ));
         }
 
-        None
+        Ok(())
     }
 }
