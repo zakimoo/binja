@@ -1,4 +1,4 @@
-use binja::{BinaryParse, BinarySerialize, to_bytes};
+use binja::{BinaryParse, BinarySerialize, from_bytes, to_bytes};
 
 #[derive(Debug, BinarySerialize, BinaryParse)]
 struct SeparateBitField {
@@ -45,16 +45,11 @@ struct TestStruct {
 }
 
 #[derive(Debug, BinarySerialize, BinaryParse)]
-struct SeparateBitField2 {
-    #[binja(bits = 1)]
-    power: u8,
-
-    #[binja(bits = 2)]
-    mode: u8,
-
-    #[binja(bits = 6)]
-    error_code: u8,
-}
+struct SeparateBitField2(
+    #[binja(bits = 1)] u8,
+    #[binja(bits = 2)] u8,
+    #[binja(bits = 6)] u8,
+);
 
 #[derive(Debug, BinarySerialize, BinaryParse)]
 struct TupleStruct(
@@ -84,45 +79,20 @@ fn main() {
         checksum: 63,
     };
 
-    let sep = SeparateBitField2 {
-        power: 1,
-        mode: 2,
-        error_code: 3,
-    };
+    // Serialize the struct to bytes
+    let struct_ser = to_bytes(&test_struct).unwrap();
+    let struct_par: TestStruct = from_bytes(&struct_ser).unwrap();
+    println!("serialized bytes: {:0x?}", struct_ser.to_vec());
+    println!("parsed struct: {:?}", struct_par);
+
+    let sep = SeparateBitField2(1, 2, 3);
     let tuple_struct = TupleStruct(sep, 20, 25, 512, 2048, 15, 10, 63);
 
-    // Serialize the struct to bytes
-    let serialized_bytes_1 = to_bytes(&test_struct).unwrap();
-    // 00011101
-    // 11001101
-    // 00000000
-    // 00010000
-    // 00000000
-    // 00011111
-    // 00001010
-    // 00111111
-    for byte in &serialized_bytes_1 {
-        println!("{:08b} ", byte);
-    }
+    let tuple_ser = to_bytes(&tuple_struct).unwrap();
+    let tuple_par: TupleStruct = from_bytes(&tuple_ser).unwrap();
 
-    let serialized_bytes_2 = to_bytes(&tuple_struct).unwrap();
-    // 00011101
-    // 11001101
-    // 00000000
-    // 00010000
-    // 00000000
-    // 00011111
-    // 00001010
-    // 00111111
-    for byte in &serialized_bytes_2 {
-        println!("{:08b} ", byte);
-    }
+    println!("serialized tuple bytes: {:0x?}", tuple_ser.to_vec());
+    println!("parsed tuple struct: {:?}", tuple_par);
 
-    // compare bytes
-
-    assert_eq!(serialized_bytes_1, serialized_bytes_2);
-
-    // // Deserialize the bytes back to the struct
-    // let deserialized_struct: TestStruct = from_bytes(&serialized_bytes).unwrap();
-    // println!("Deserialized struct: {:?}", deserialized_struct);
+    assert_eq!(struct_ser, tuple_ser);
 }
