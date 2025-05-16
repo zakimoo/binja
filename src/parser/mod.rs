@@ -1,4 +1,5 @@
 mod bin_parse;
+#[cfg(feature = "serde")]
 mod serde_impl;
 
 pub use bin_parse::{BinaryParse, binary_parse};

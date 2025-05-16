@@ -1,13 +1,10 @@
 use binja::{
     error::Result,
-    serde_to_bytes,
     serializer::{BinarySerialize, BinarySerializer},
     to_bytes,
 };
 use criterion::{Criterion, criterion_group, criterion_main};
-use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
 struct TestStruct {
     a: u8,
     b: i16,
@@ -46,10 +43,6 @@ pub fn benchmark_serialization(c: &mut Criterion) {
     let test_struct = TestStruct::default();
 
     c.bench_function("to_bytes", |b| b.iter(|| to_bytes(&test_struct).unwrap()));
-
-    c.bench_function("serde_to_bytes", |b| {
-        b.iter(|| serde_to_bytes(&test_struct).unwrap())
-    });
 }
 
 criterion_group!(benches, benchmark_serialization);

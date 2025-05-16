@@ -1,6 +1,7 @@
 use std::fmt::{self, Display};
 
 use bytes::TryGetError;
+#[cfg(feature = "serde")]
 use serde::{de, ser};
 
 // A type alias for Result that uses the custom Error enum
@@ -72,6 +73,7 @@ pub enum Error {
 impl std::error::Error for Error {}
 
 // Implementing the serde::ser::Error trait for serialization errors
+#[cfg(feature = "serde")]
 impl ser::Error for Error {
     // Converts a custom message into an Error::Message variant
     fn custom<T: Display>(msg: T) -> Self {
@@ -80,6 +82,7 @@ impl ser::Error for Error {
 }
 
 // Implementing the serde::de::Error trait for deserialization errors
+#[cfg(feature = "serde")]
 impl de::Error for Error {
     // Converts a custom message into an Error::Message variant
     fn custom<T: Display>(msg: T) -> Self {

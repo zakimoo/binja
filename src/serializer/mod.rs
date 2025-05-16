@@ -1,4 +1,5 @@
 mod bin_serialize;
+#[cfg(feature = "serde")]
 mod serde_impl;
 
 pub use bin_serialize::{BinarySerialize, binary_serialize};

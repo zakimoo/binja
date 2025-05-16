@@ -7,9 +7,12 @@ use crate::error::Result;
 use bytes::BytesMut;
 use config::Config;
 use parser::{BinaryParse, BinaryParser};
-use serde::{Deserialize, Serialize};
 use serializer::{BinarySerialize, BinarySerializer};
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "derive")]
 pub use binja_derive::{BinaryParse, BinarySerialize};
 
 /// Serializes a given value into a binary format using the default configuration.
@@ -53,6 +56,7 @@ where
 }
 
 /// See [`to_bytes`].
+#[cfg(feature = "serde")]
 pub fn serde_to_bytes<T>(value: &T) -> Result<BytesMut>
 where
     T: Serialize,
@@ -105,6 +109,7 @@ where
 }
 
 /// See [`to_bytes_with_config`].
+#[cfg(feature = "serde")]
 pub fn serde_to_bytes_with_config<T>(value: &T, config: Config) -> Result<BytesMut>
 where
     T: Serialize,
@@ -157,6 +162,7 @@ where
 }
 
 /// See [`from_bytes`].
+#[cfg(feature = "serde")]
 pub fn serde_from_bytes<'a, T>(bytes: &'a [u8]) -> Result<T>
 where
     T: Deserialize<'a>,
@@ -211,6 +217,7 @@ where
 }
 
 /// See [`from_bytes_with_config`].
+#[cfg(feature = "serde")]
 pub fn serde_from_bytes_with_config<'a, T>(bytes: &'a [u8], config: Config) -> Result<T>
 where
     T: Deserialize<'a>,
