@@ -30,6 +30,7 @@ pub fn generate_enum_binary_serialize(
     let variant_arms = generate_enum_serialize_variants(&data.variants, attr)?;
 
     let expand = quote! {
+         #[allow(unused_variables)]
         impl #generics binja::serializer::BinarySerialize for #name #generics #where_clause{
             fn binary_serialize(&self, serializer: &mut binja::serializer::BinarySerializer) -> binja::error::Result<()> {
                 match self {
@@ -74,48 +75,14 @@ fn generate_enum_serialize_variants(
         // }
         let (pat, serialize_fields) = match &variant.fields {
             syn::Fields::Named(fields) => {
-                let field_names: Vec<_> = fields
-                    .named
-                    .iter()
-                    .map(|f| f.ident.as_ref().unwrap())
-                    .collect();
-
-                // Self::D { a, b }
-                let pats = quote! { { #(#field_names),* } };
-
                 // code to run
-                let ser = gen_ser_fields(&fields.named, |f, _| {
-                    let ident = &f.ident;
+                let (fields_names, fields_ser_code) = gen_ser_fields(&fields.named)?;
 
-                    // enum Example { A { field: String } }
-                    // match self{
-                    //     Self::A { field } => {
-                    //         ::binja::serializer::binary_serialize(field, serializer)?,
-                    //     }
-                    quote! { #ident }
-                })?;
-
-                (pats, ser)
+                (quote! {{#fields_names}}, fields_ser_code)
             }
             syn::Fields::Unnamed(fields) => {
-                let idents: Vec<syn::Ident> = (0..fields.unnamed.len())
-                    .map(|i| syn::Ident::new(&format!("field_{i}"), Span::call_site()))
-                    .collect();
-                // Self::C(field_0)
-                let pats = quote! { ( #(#idents),* ) };
-                // code to run
-                let ser = gen_ser_fields(&fields.unnamed, |_, i| {
-                    // enum Example { A { field: String } }
-                    // match self{
-                    //     Self::A { field_#index } => {
-                    //         ::binja::serializer::binary_serialize(field_#index, serializer)?,
-                    //     }
-                    let ident = syn::Ident::new(&format!("field_{i}"), Span::call_site());
-                    quote! {
-                        #ident
-                    }
-                })?;
-                (pats, ser)
+                let (fields_names, fields_ser_code) = gen_ser_fields(&fields.unnamed)?;
+                (quote! {(#fields_names)}, fields_ser_code)
             }
 
             syn::Fields::Unit => (quote! {}, quote! {}),

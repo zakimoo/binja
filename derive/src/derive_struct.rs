@@ -1,6 +1,6 @@
 use darling::FromField;
 use proc_macro2::{Span, TokenStream};
-use quote::quote;
+use quote::{ToTokens, quote};
 use syn::{parse_quote, spanned::Spanned};
 
 use crate::{
@@ -8,11 +8,13 @@ use crate::{
     bit_field::{flush_bit_field_at_end, flush_bit_field_if_needed, gen_bit_field_serialization},
 };
 
+pub const UNNAMED_FIELD_PREFIX: &str = "field_";
+
 pub fn generate_struct_binary_serialize(
     data: &syn::DataStruct,
     attributes: &StructAttributes,
 ) -> syn::Result<TokenStream> {
-    let name = &attributes.ident;
+    let struct_name: &syn::Ident = &attributes.ident;
     let generics = &attributes.generics;
     let mut gen_clone = generics.clone();
 
@@ -28,23 +30,21 @@ pub fn generate_struct_binary_serialize(
     let fields_token = match &data.fields {
         // struct Example { field: String }
         syn::Fields::Named(fields_named) => {
-            gen_ser_fields(&fields_named.named, |f, _| {
-                let ident = &f.ident;
-                // struct Example { field: String }
-                // ::binja::serializer::binary_serialize(&self.field, serializer)?;
-                quote! { &self.#ident }
-            })?
+            let (fields_names, field_ser_code) = gen_ser_fields(&fields_named.named)?;
+
+            quote! {
+               let #struct_name { #fields_names } = self;
+                #field_ser_code
+            }
         }
         // struct Example(String) , struct Example(String, String)
         syn::Fields::Unnamed(fields_unnamed) => {
-            gen_ser_fields(&fields_unnamed.unnamed, |_, i| {
-                let index = syn::Index::from(i);
-                // struct Example(u8)
-                // ::binja::serializer::binary_serialize(&self.0, serializer)?;
-                quote! {
-                    &self.#index
-                }
-            })?
+            let (fields_names, field_ser_code) = gen_ser_fields(&fields_unnamed.unnamed)?;
+
+            quote! {
+                let #struct_name ( #fields_names ) = self;
+                #field_ser_code
+            }
         }
         // struct Example;
         syn::Fields::Unit => {
@@ -53,7 +53,8 @@ pub fn generate_struct_binary_serialize(
     };
 
     let expand = quote! {
-        impl #generics binja::serializer::BinarySerialize for #name #generics #where_clause{
+        #[allow(unused_variables)]
+        impl #generics binja::serializer::BinarySerialize for #struct_name #generics #where_clause{
             fn binary_serialize(&self, serializer: &mut ::binja::serializer::BinarySerializer) -> binja::error::Result<()> {
                 #fields_token
                 Ok(())
@@ -153,13 +154,10 @@ pub fn generate_struct_binary_parse(
     Ok(expand.into())
 }
 
-pub fn gen_ser_fields<F>(
+pub fn gen_ser_fields(
     fields: &syn::punctuated::Punctuated<syn::Field, syn::Token![,]>,
-    get_field_expr: F,
-) -> syn::Result<TokenStream>
-where
-    F: Fn(&syn::Field, usize) -> TokenStream,
-{
+) -> syn::Result<(TokenStream, TokenStream)> {
+    let mut field_names = Vec::new();
     let mut code = Vec::new();
     let mut bit_field_declared = false;
     let mut bit_offset = 0u8;
@@ -169,12 +167,13 @@ where
         let attrs = FieldAttributes::from_field(f)?;
         attrs.validate(f.span())?;
 
+        let field_expr = get_field_expr(f, i);
+        field_names.push(field_expr.clone());
+
         // skip field
         if attrs.skip() {
             continue;
         }
-
-        let field_expr = get_field_expr(f, i);
 
         // if field have #[binja(bits = 6)]
         if let Some(bits) = attrs.bits() {
@@ -210,9 +209,15 @@ where
     // if last field is a bit field smaller that 8 bits
     flush_bit_field_at_end(&mut code, bit_offset);
 
-    Ok(quote! {
-         #(#code)*
-    })
+    Ok((
+        quote! {
+            #(#field_names),*
+            ,..
+        },
+        quote! {
+             #(#code)*
+        },
+    ))
 }
 
 pub fn gen_par_fields<F1, F2>(
@@ -314,6 +319,14 @@ where
         #(#code)*
         #return_code
     })
+}
+
+pub fn get_field_expr(f: &syn::Field, i: usize) -> TokenStream {
+    if let Some(ident) = &f.ident {
+        return ident.clone().into_token_stream();
+    }
+
+    syn::Ident::new(&format!("{UNNAMED_FIELD_PREFIX}{i}"), Span::call_site()).into_token_stream()
 }
 
 pub fn is_type_bool(ty: &syn::Type) -> bool {
