@@ -45,10 +45,20 @@ struct TestStruct {
 }
 
 #[derive(Debug, BinarySerialize, BinaryParse)]
+struct SeparateBitField2 {
+    #[binja(bits = 1)]
+    power: u8,
+
+    #[binja(bits = 2)]
+    mode: u8,
+
+    #[binja(bits = 6)]
+    error_code: u8,
+}
+
+#[derive(Debug, BinarySerialize, BinaryParse)]
 struct TupleStruct(
-    #[binja(bits = 1)] u8,
-    #[binja(bits = 2)] u8,
-    #[binja(bits = 3)] u8,
+    SeparateBitField2,
     #[binja(bits = 5, no_overflow)] u8,
     #[binja(bits = 8)] u8,
     #[binja(bits = 10)] u16,
@@ -74,7 +84,12 @@ fn main() {
         checksum: 63,
     };
 
-    let tuple_struct = TupleStruct(1, 2, 3, 20, 25, 512, 2048, 15, 10, 63);
+    let sep = SeparateBitField2 {
+        power: 1,
+        mode: 2,
+        error_code: 3,
+    };
+    let tuple_struct = TupleStruct(sep, 20, 25, 512, 2048, 15, 10, 63);
 
     // Serialize the struct to bytes
     let serialized_bytes_1 = to_bytes(&test_struct).unwrap();
@@ -102,6 +117,8 @@ fn main() {
     for byte in &serialized_bytes_2 {
         println!("{:08b} ", byte);
     }
+
+    // compare bytes
 
     assert_eq!(serialized_bytes_1, serialized_bytes_2);
 

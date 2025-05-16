@@ -45,96 +45,95 @@ fn generate_enum_serialize_variants(
     let untagged = attr.untagged();
     let mut current_value: isize = -1;
 
-    variants
-        .iter()
-        .map(|variant| {
-            let variant_ident = &variant.ident;
+    let mut code = Vec::new();
 
-            get_enum_value(&mut current_value, &variant.discriminant);
+    for variant in variants {
+        let variant_ident = &variant.ident;
 
-            // Create a literal with the correct suffix (e.g., 1i8)
-            let v_lit = syn::LitInt::new(
-                &format!("{}{}", current_value, repr),
-                proc_macro2::Span::call_site(),
-            );
+        get_enum_value(&mut current_value, &variant.discriminant);
 
-            // enum TestEnum {
-            //     AA,
-            //     A = 10,
-            //     B,
-            //     C(u8) = 20,
-            //     D { a: u8, b: i16 },
-            //     E(u8, i16),
-            // }
-            let (pat, serialize_fields) = match &variant.fields {
-                syn::Fields::Named(fields) => {
-                    let field_names: Vec<_> = fields
-                        .named
-                        .iter()
-                        .map(|f| f.ident.as_ref().unwrap())
-                        .collect();
+        // Create a literal with the correct suffix (e.g., 1i8)
+        let v_lit = syn::LitInt::new(
+            &format!("{}{}", current_value, repr),
+            proc_macro2::Span::call_site(),
+        );
 
-                    // Self::D { a, b }
-                    let pats = quote! { { #(#field_names),* } };
+        // enum TestEnum {
+        //     AA,
+        //     A = 10,
+        //     B,
+        //     C(u8) = 20,
+        //     D { a: u8, b: i16 },
+        //     E(u8, i16),
+        // }
+        let (pat, serialize_fields) = match &variant.fields {
+            syn::Fields::Named(fields) => {
+                let field_names: Vec<_> = fields
+                    .named
+                    .iter()
+                    .map(|f| f.ident.as_ref().unwrap())
+                    .collect();
 
-                    // code to run
-                    let ser = gen_ser_fields(&fields.named, |f, _| {
-                        let ident = &f.ident;
+                // Self::D { a, b }
+                let pats = quote! { { #(#field_names),* } };
 
-                        // enum Example { A { field: String } }
-                        // match self{
-                        //     Self::A { field } => {
-                        //         ::binja::serializer::binary_serialize(field, serializer)?,
-                        //     }
-                        quote! { #ident }
-                    });
+                // code to run
+                let ser = gen_ser_fields(&fields.named, |f, _| {
+                    let ident = &f.ident;
 
-                    (pats, ser)
-                }
-                syn::Fields::Unnamed(fields) => {
-                    let idents: Vec<syn::Ident> = (0..fields.unnamed.len())
-                        .map(|i| {
-                            syn::Ident::new(&format!("field_{i}"), proc_macro2::Span::call_site())
-                        })
-                        .collect();
-                    // Self::C(field_0)
-                    let pats = quote! { ( #(#idents),* ) };
-                    // code to run
-                    let ser = gen_ser_fields(&fields.unnamed, |_, i| {
-                        // enum Example { A { field: String } }
-                        // match self{
-                        //     Self::A { field_#index } => {
-                        //         ::binja::serializer::binary_serialize(field_#index, serializer)?,
-                        //     }
-                        let ident =
-                            syn::Ident::new(&format!("field_{i}"), proc_macro2::Span::call_site());
-                        quote! {
-                            #ident
-                        }
-                    });
-                    (pats, ser)
-                }
+                    // enum Example { A { field: String } }
+                    // match self{
+                    //     Self::A { field } => {
+                    //         ::binja::serializer::binary_serialize(field, serializer)?,
+                    //     }
+                    quote! { #ident }
+                });
 
-                syn::Fields::Unit => (quote! {}, quote! {}),
-            };
-
-            let discriminant_code = if untagged {
-                quote! {}
-            } else {
-                quote! {
-                    let value = #v_lit;
-                    ::binja::serializer::binary_serialize(&value, serializer)?;
-                }
-            };
-
-            quote! {
-                Self::#variant_ident #pat => {
-                    #discriminant_code
-                    #serialize_fields
-                }
+                (pats, ser)
             }
-        })
-        .collect()
+            syn::Fields::Unnamed(fields) => {
+                let idents: Vec<syn::Ident> = (0..fields.unnamed.len())
+                    .map(|i| syn::Ident::new(&format!("field_{i}"), proc_macro2::Span::call_site()))
+                    .collect();
+                // Self::C(field_0)
+                let pats = quote! { ( #(#idents),* ) };
+                // code to run
+                let ser = gen_ser_fields(&fields.unnamed, |_, i| {
+                    // enum Example { A { field: String } }
+                    // match self{
+                    //     Self::A { field_#index } => {
+                    //         ::binja::serializer::binary_serialize(field_#index, serializer)?,
+                    //     }
+                    let ident =
+                        syn::Ident::new(&format!("field_{i}"), proc_macro2::Span::call_site());
+                    quote! {
+                        #ident
+                    }
+                });
+                (pats, ser)
+            }
+
+            syn::Fields::Unit => (quote! {}, quote! {}),
+        };
+
+        let discriminant_code = if untagged {
+            quote! {}
+        } else {
+            quote! {
+                let value = #v_lit;
+                ::binja::serializer::binary_serialize(&value, serializer)?;
+            }
+        };
+
+        code.push(quote! {
+            Self::#variant_ident #pat => {
+                #discriminant_code
+                #serialize_fields
+            }
+        });
+    }
+
+    code
 }
 
 pub fn generate_enum_binary_parse(data: &syn::DataEnum, attr: &EnumAttributes) -> TokenStream {
@@ -169,92 +168,89 @@ fn gen_par_variants(
     let mut current_value: isize = -1;
     let mut seen_values = vec![];
 
-    let variant_arms = variants
-        .iter()
-        .map(|variant| {
-            let variant_ident = &variant.ident;
+    let mut variant_arms = Vec::new();
 
-            get_enum_value(&mut current_value, &variant.discriminant);
+    for variant in variants {
+        let variant_ident = &variant.ident;
 
-            // Create a literal with the correct suffix (e.g., 1i8)
-            let v_lit = syn::LitInt::new(
-                &format!("{}{}", current_value, attrs.repr()),
-                proc_macro2::Span::call_site(),
-            );
+        get_enum_value(&mut current_value, &variant.discriminant);
 
-            seen_values.push(current_value);
+        // Create a literal with the correct suffix (e.g., 1i8)
+        let v_lit = syn::LitInt::new(
+            &format!("{}{}", current_value, attrs.repr()),
+            proc_macro2::Span::call_site(),
+        );
 
-            match &variant.fields {
-                syn::Fields::Unit => quote! {
-                    #v_lit => Ok(Self::#variant_ident),
-                },
-                syn::Fields::Unnamed(fields) => {
-                    let field_code = gen_par_fields(
-                        &fields.unnamed,
-                        |_, i| {
-                            let ident = syn::Ident::new(
-                                &format!("field_{i}"),
-                                proc_macro2::Span::call_site(),
-                            );
-                            // enum Example { A { field: String } }
-                            // match self{
-                            //     Self::A { field_#index } => {
-                            //         ::binja::serializer::binary_serialize(field_#index, serializer)?,
-                            //     }
-                            quote! { #ident }
-                        },
-                        |fields| {
-                            quote! {
-                                Ok(Self::#variant_ident(
-                                    #fields
-                                ))
-                            }
-                        },
-                    );
+        seen_values.push(current_value);
 
-                    quote! {
-                        #v_lit => {
-                            #field_code
+        match &variant.fields {
+            syn::Fields::Unit => variant_arms.push(quote! {
+                #v_lit => Ok(Self::#variant_ident),
+            }),
+            syn::Fields::Unnamed(fields) => {
+                let field_code = gen_par_fields(
+                    &fields.unnamed,
+                    |_, i| {
+                        let ident =
+                            syn::Ident::new(&format!("field_{i}"), proc_macro2::Span::call_site());
+                        // enum Example { A { field: String } }
+                        // match self{
+                        //     Self::A { field_#index } => {
+                        //         ::binja::serializer::binary_serialize(field_#index, serializer)?,
+                        //     }
+                        quote! { #ident }
+                    },
+                    |fields| {
+                        quote! {
+                            Ok(Self::#variant_ident(
+                                #fields
+                            ))
                         }
-                    }
-                }
-                syn::Fields::Named(fields) => {
-                    let field_code = gen_par_fields(
-                        &fields.named,
-                        |f, _| {
-                            let ident = f.ident.as_ref().unwrap();
-                            // enum Example { A { field: String } }
-                            // match self{
-                            //     Self::A { field_#index } => {
-                            //         ::binja::serializer::binary_serialize(field_#index, serializer)?,
-                            //     }
-                            quote! { #ident }
-                        },
-                        |fields| {
-                            quote! {
-                                Ok(Self::#variant_ident{
-                                    #fields
-                                })
-                            }
-                        },
-                    );
+                    },
+                );
 
-                    quote! {
-                         #v_lit => {
-                            #field_code
-                         }
+                variant_arms.push(quote! {
+                    #v_lit => {
+                        #field_code
                     }
-
-                    // let parsers = gen_par_named_fields(fields, false);
-                    // quote! {
-                    //     #v_lit => Ok(Self::#variant_ident {
-                    //         #(#parsers)*
-                    //     }),
-                    // }
-                }
+                });
             }
-        })
-        .collect::<Vec<_>>();
+            syn::Fields::Named(fields) => {
+                let field_code = gen_par_fields(
+                    &fields.named,
+                    |f, _| {
+                        let ident = f.ident.as_ref().unwrap();
+                        // enum Example { A { field: String } }
+                        // match self{
+                        //     Self::A { field_#index } => {
+                        //         ::binja::serializer::binary_serialize(field_#index, serializer)?,
+                        //     }
+                        quote! { #ident }
+                    },
+                    |fields| {
+                        quote! {
+                            Ok(Self::#variant_ident{
+                                #fields
+                            })
+                        }
+                    },
+                );
+
+                variant_arms.push(quote! {
+                     #v_lit => {
+                        #field_code
+                     }
+                });
+
+                // let parsers = gen_par_named_fields(fields, false);
+                // quote! {
+                //     #v_lit => Ok(Self::#variant_ident {
+                //         #(#parsers)*
+                //     }),
+                // }
+            }
+        }
+    }
 
     // Format expected values as a human-readable string
     let mut expected = seen_values
