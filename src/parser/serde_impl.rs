@@ -408,8 +408,6 @@ impl<'de> serde::de::VariantAccess<'de> for EnumAccess<'_, 'de> {
     where
         T: DeserializeSeed<'de>,
     {
-        self.de.check_length::<T>()?;
-
         seed.deserialize(self.de)
     }
 
@@ -445,8 +443,6 @@ impl<'de> serde::de::SeqAccess<'de> for SizelessAccess<'_, 'de> {
     where
         T: DeserializeSeed<'de>,
     {
-        self.de.check_length::<T>()?;
-
         seed.deserialize(&mut *self.de).map(Some)
     }
 

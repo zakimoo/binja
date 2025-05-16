@@ -192,17 +192,4 @@ impl<'de> BinaryParser<'de> {
 
         Ok(size)
     }
-
-    fn check_length<T>(&self) -> Result<usize> {
-        let size = std::mem::size_of::<T>();
-        let len = self.input.len();
-        if len < size {
-            return Err(Error::NoEnoughData {
-                expected: size,
-                available: len,
-            });
-        }
-
-        Ok(size)
-    }
 }
