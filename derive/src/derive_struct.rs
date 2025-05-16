@@ -227,37 +227,87 @@ where
     let mut code = Vec::new();
     let mut fields_code = Vec::new();
 
+    let mut bit_offset: u8 = 0;
+    let byte_var = quote! { bit_field };
+
     for (i, f) in fields.iter().enumerate() {
-        // Check if the field has attributes
         let attrs = FieldAttributes::from_field(f)?;
         attrs.validate(f.span())?;
 
         let ident = get_field_expr(f, i);
-
+        let field_type = &f.ty;
         fields_code.push(ident.clone());
 
-        // #[derive(BinaryParse)]
-        // struct Example { #[binja(skip)]  field: String ,field2: u8 }
-        // Ok(Self{
-        //     field: Default::default(), // skipped fields are defaulted for parsing
-        //     field2: binja::parser::binary_parse(parser)?,
-        // })
         if attrs.skip() {
-            // skipped fields are defaulted
             code.push(quote! {
-              let  #ident= Default::default();
+                let #ident = Default::default();
             });
-
             continue;
         }
 
-        code.push(quote! {
-           let #ident= ::binja::parser::binary_parse(parser)?;
-        });
+        if let Some(bits) = attrs.bits() {
+            let mut remaining_bits = bits;
+            let mut local_shift = 0u8;
+
+            // Define the field variable
+            code.push(quote! {
+                let mut #ident: #field_type = 0;
+            });
+
+            while remaining_bits > 0 {
+                let bits_in_this_byte = 8 - (bit_offset % 8);
+                let consume_bits = remaining_bits.min(bits_in_this_byte);
+
+                // Read a new byte if starting fresh or if no byte is loaded yet
+                if bit_offset % 8 == 0 {
+                    code.push(quote! {
+                        let #byte_var: u8 = ::binja::parser::binary_parse(parser)?;
+                    });
+                }
+
+                let right_shift = bit_offset % 8;
+
+                let mut expr = quote! {(#byte_var as #field_type)};
+
+                expr = if right_shift > 0 {
+                    quote! { (#expr >> #right_shift) }
+                } else {
+                    expr
+                };
+
+                expr = if consume_bits == 8 || consume_bits + right_shift == 8 {
+                    expr
+                } else {
+                    quote! { (#expr &::binja::bit_mask!(#consume_bits)) }
+                };
+
+                expr = if local_shift > 0 {
+                    quote! {( #expr << #local_shift )}
+                } else {
+                    expr
+                };
+
+                code.push(quote! {
+                    #ident |= #expr;
+                });
+
+                bit_offset += consume_bits;
+                remaining_bits -= consume_bits;
+                local_shift += consume_bits;
+            }
+        } else {
+            // if last field is a bit field smaller that 8 bits
+            // current field is not a bit field
+            bit_offset = 0;
+
+            code.push(quote! {
+                let #ident = ::binja::parser::binary_parse(parser)?;
+            });
+        }
     }
 
     let return_code = get_return_code(&quote! {
-       #(#fields_code),*
+        #(#fields_code),*
     });
 
     Ok(quote! {
