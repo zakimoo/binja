@@ -172,59 +172,28 @@ fn gen_par_variants(
                 #v_lit => Ok(Self::#variant_ident),
             }),
             syn::Fields::Unnamed(fields) => {
-                let field_code = gen_par_fields(
-                    &fields.unnamed,
-                    |_, i| {
-                        let ident = syn::Ident::new(&format!("field_{i}"), Span::call_site());
-                        // enum Example { A { field: String } }
-                        // match self{
-                        //     Self::A { field_#index } => {
-                        //         ::binja::serializer::binary_serialize(field_#index, serializer)?,
-                        //     }
-                        quote! { #ident }
-                    },
-                    |fields| {
-                        quote! {
-                            Ok(Self::#variant_ident(
-                                #fields
-                            ))
-                        }
-                    },
-                )?;
+                let (fields_names, fields_code) = gen_par_fields(&fields.unnamed)?;
 
                 variant_arms.push(quote! {
                     #v_lit => {
-                        #field_code
+                        #fields_code
+                        Ok(Self::#variant_ident(
+                            #fields_names
+                        ))
                     }
                 });
             }
             syn::Fields::Named(fields) => {
-                let field_code = gen_par_fields(
-                    &fields.named,
-                    |f, _| {
-                        let ident = f.ident.as_ref().unwrap();
-                        // enum Example { A { field: String } }
-                        // match self{
-                        //     Self::A { field_#index } => {
-                        //         ::binja::serializer::binary_serialize(field_#index, serializer)?,
-                        //     }
-                        quote! { #ident }
-                    },
-                    |fields| {
-                        quote! {
-                            Ok(Self::#variant_ident{
-                                #fields
-                            })
-                        }
-                    },
-                )?;
+                let (fields_names, fields_code) = gen_par_fields(&fields.named)?;
 
                 variant_arms.push(quote! {
-                     #v_lit => {
-                        #field_code
-                     }
+                    #v_lit => {
+                        #fields_code
+                        Ok(Self::#variant_ident {
+                            #fields_names
+                        })
+                    }
                 });
-
                 // let parsers = gen_par_named_fields(fields, false);
                 // quote! {
                 //     #v_lit => Ok(Self::#variant_ident {

@@ -84,60 +84,26 @@ pub fn generate_struct_binary_parse(
 
     let code = match &data.fields {
         // struct Example { field: String }
-        syn::Fields::Named(fields_named) => gen_par_fields(
-            &fields_named.named,
-            |f, _| {
-                let ident = &f.ident;
-                // struct Example { field: String }
-                // Ok(Self{
-                //     field: Default::default(), // skipped fields are defaulted for parsing
-                //     field2: binja::parser::binary_parse(parser)?,
-                // })
-                quote! {
-                    #ident
-                }
-            },
-            |fields| {
-                // struct Example { field: String }
-                // Ok(Self{
-                //     field: Default::default(), // skipped fields are defaulted for parsing
-                //     field2: binja::parser::binary_parse(parser)?,
-                // })
-                quote! {
-                    Ok(Self {
-                        #fields
-                    })
-                }
-            },
-        )?,
+        syn::Fields::Named(fields_named) => {
+            let (fields_names, fields_par_code) = gen_par_fields(&fields_named.named)?;
+            quote! {
+                #fields_par_code
+                Ok(Self {
+                    #fields_names
+                })
+            }
+        }
 
         // struct Example(String) , struct Example(String, String)
-        syn::Fields::Unnamed(fields_unnamed) => gen_par_fields(
-            &fields_unnamed.unnamed,
-            |_, i| {
-                let ident = syn::Ident::new(&format!("field_{i}"), Span::call_site());
-                // struct Example { field: String }
-                // Ok(Self{
-                //     field: Default::default(), // skipped fields are defaulted for parsing
-                //     field2: binja::parser::binary_parse(parser)?,
-                // })
-                quote! {
-                    #ident
-                }
-            },
-            |fields| {
-                // struct Example { field: String }
-                // Ok(Self{
-                //     field: Default::default(), // skipped fields are defaulted for parsing
-                //     field2: binja::parser::binary_parse(parser)?,
-                // })
-                quote! {
-                    Ok(Self (
-                        #fields
-                    ))
-                }
-            },
-        )?,
+        syn::Fields::Unnamed(fields_unnamed) => {
+            let (fields_names, fields_par_code) = gen_par_fields(&fields_unnamed.unnamed)?;
+            quote! {
+                #fields_par_code
+                Ok(Self(
+                    #fields_names
+                ))
+            }
+        }
 
         // struct Example;
         syn::Fields::Unit => quote! {Ok(Self {})},
@@ -220,17 +186,11 @@ pub fn gen_ser_fields(
     ))
 }
 
-pub fn gen_par_fields<F1, F2>(
+pub fn gen_par_fields(
     fields: &syn::punctuated::Punctuated<syn::Field, syn::Token![,]>,
-    get_field_expr: F1,
-    get_return_code: F2,
-) -> syn::Result<TokenStream>
-where
-    F1: Fn(&syn::Field, usize) -> TokenStream,
-    F2: Fn(&TokenStream) -> TokenStream,
-{
+) -> syn::Result<(TokenStream, TokenStream)> {
     let mut code = Vec::new();
-    let mut fields_code = Vec::new();
+    let mut fields_names = Vec::new();
 
     let mut bit_offset: u8 = 0;
     let byte_var = quote! { bit_field };
@@ -241,7 +201,7 @@ where
 
         let ident = get_field_expr(f, i);
         let field_type = &f.ty;
-        fields_code.push(ident.clone());
+        fields_names.push(ident.clone());
 
         if attrs.skip() {
             code.push(quote! {
@@ -311,14 +271,14 @@ where
         }
     }
 
-    let return_code = get_return_code(&quote! {
-        #(#fields_code),*
-    });
-
-    Ok(quote! {
-        #(#code)*
-        #return_code
-    })
+    Ok((
+        quote! {
+            #(#fields_names),*
+        },
+        quote! {
+            #(#code)*
+        },
+    ))
 }
 
 pub fn get_field_expr(f: &syn::Field, i: usize) -> TokenStream {
