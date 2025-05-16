@@ -13,35 +13,59 @@ struct SeparateBitField {
 }
 
 #[derive(Debug, BinarySerialize, BinaryParse)]
+#[allow(dead_code)]
 struct TestStruct {
     power: SeparateBitField,
 
+    #[binja(skip)]
+    skip_0: u8,
     // 2 bits reserved for future use
     #[binja(bits = 5, no_overflow)]
     reserved: u8,
+
+    #[binja(skip)]
+    skip_1: u8,
 
     // 8 bits for temperature value (0-255)
     #[binja(bits = 8)]
     temperature: u8,
 
+    #[binja(skip)]
+    skip_2: u8,
+
     // 10 bits for pressure value (0-1023) - spans more than 1 byte but less than 2
     #[binja(bits = 10)]
     pressure: u16,
+
+    #[binja(skip)]
+    skip_3: u8,
 
     // 12 bits for altitude (0-4095) - just below 2 bytes
     #[binja(bits = 12)]
     altitude: u16,
 
+    #[binja(skip)]
+    skip_4: u8,
+
     // 5 bits for voltage level (0-31)
     #[binja(bits = 5)]
     voltage: u8,
 
+    #[binja(skip)]
+    skip_5: u8,
+
     // not bitfield, just a normal u8
     current: u8,
+
+    #[binja(skip)]
+    skip_6: u8,
 
     // 6 bits for checksum (0-63)
     #[binja(bits = 6, no_overflow)]
     checksum: u16,
+
+    #[binja(skip)]
+    skip_7: u8,
 }
 
 #[derive(Debug, BinarySerialize, BinaryParse)]
@@ -70,13 +94,21 @@ fn main() {
             mode: 2,
             error_code: 3,
         },
+        skip_0: 1,
         reserved: 20,
+        skip_1: 2,
         temperature: 25,
+        skip_2: 3,
         pressure: 512,
+        skip_3: 4,
         altitude: 2048,
+        skip_4: 5,
         voltage: 15,
+        skip_5: 6,
         current: 10,
+        skip_6: 7,
         checksum: 63,
+        skip_7: 8,
     };
 
     // Serialize the struct to bytes
