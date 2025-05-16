@@ -1,5 +1,8 @@
 use binja::{BinaryParse, BinarySerialize, to_bytes};
 
+#[derive(BinaryParse, PartialEq, Eq, Debug)]
+struct Unit;
+
 #[derive(BinarySerialize, BinaryParse, PartialEq, Eq, Debug)]
 struct Newtype(u32);
 #[derive(BinarySerialize, BinaryParse, PartialEq, Eq, Debug)]
@@ -59,7 +62,7 @@ impl Default for TestStruct {
 fn main() {
     let my_struct = TestStruct::default();
 
-    let expected = [
+    let expected = vec![
         0x01, // u8
         0x02, 0x00, // u16
         0x03, 0x00, 0x00, 0x00, // u32
@@ -104,13 +107,7 @@ fn main() {
         b'c', // value string
     ];
 
-    let serialized = to_bytes(&my_struct).unwrap();
+    let serialized = to_bytes(&my_struct).unwrap().to_vec();
 
-    for (_i, byte) in serialized.iter().enumerate() {
-        println!("0x{:02X}, ", byte);
-    }
-    println!("----------------------------");
-    for (_i, byte) in expected.iter().enumerate() {
-        println!("0x{:02X}, ", byte);
-    }
+    assert_eq!(serialized, expected);
 }
