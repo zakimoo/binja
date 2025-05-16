@@ -1,4 +1,4 @@
-use darling::{FromDeriveInput, FromField};
+use darling::{FromDeriveInput, FromField, FromVariant};
 
 #[derive(Debug, FromDeriveInput)]
 #[darling(attributes(binja), supports(struct_any))]
@@ -97,4 +97,11 @@ impl FieldAttributes {
 
         Ok(())
     }
+}
+
+#[derive(Debug, FromVariant)]
+#[darling(attributes(binja))]
+pub struct VariantAttributes {
+    #[allow(unused)]
+    pub ident: syn::Ident,
 }

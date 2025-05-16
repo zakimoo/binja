@@ -1,11 +1,12 @@
 use std::vec;
 
+use darling::FromVariant;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{Expr, parse_quote, token::Eq};
 
 use crate::{
-    attribute::EnumAttributes,
+    attribute::{EnumAttributes, VariantAttributes},
     derive_struct::{gen_par_fields, gen_ser_fields},
 };
 
@@ -54,6 +55,9 @@ fn generate_enum_serialize_variants(
 
     for variant in variants {
         let variant_ident = &variant.ident;
+
+        // leave it here to validate variant attributes
+        let _attr = VariantAttributes::from_variant(variant)?;
 
         get_enum_value(&mut current_value, &variant.discriminant);
 
@@ -182,6 +186,9 @@ fn gen_par_variants(
 
     for variant in variants {
         let variant_ident = &variant.ident;
+
+        // leave it here to validate variant attributes
+        let _attr = VariantAttributes::from_variant(variant)?;
 
         get_enum_value(&mut current_value, &variant.discriminant);
 

@@ -166,7 +166,7 @@ where
 
     for (i, f) in fields.iter().enumerate() {
         // Check if the field has attributes
-        let attrs = FieldAttributes::from_field(f).unwrap_or_default();
+        let attrs = FieldAttributes::from_field(f)?;
         attrs.validate(f.span())?;
 
         // skip field
@@ -229,7 +229,7 @@ where
 
     for (i, f) in fields.iter().enumerate() {
         // Check if the field has attributes
-        let attrs = FieldAttributes::from_field(f).unwrap_or_default();
+        let attrs = FieldAttributes::from_field(f)?;
         attrs.validate(f.span())?;
 
         let ident = get_field_expr(f, i);
