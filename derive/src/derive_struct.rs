@@ -315,3 +315,12 @@ where
         #return_code
     })
 }
+
+pub fn is_type_bool(ty: &syn::Type) -> bool {
+    if let syn::Type::Path(syn::TypePath { path, .. }) = ty {
+        if let Some(ident) = path.get_ident() {
+            return ident == "bool";
+        }
+    }
+    false
+}

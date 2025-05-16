@@ -1,5 +1,7 @@
 use darling::{FromDeriveInput, FromField, FromVariant};
 
+use crate::bit_field::{VALID_BIT_FIELD_TYPES, is_valid_bit_field_type};
+
 #[derive(Debug, FromDeriveInput)]
 #[darling(attributes(binja), supports(struct_any))]
 pub struct StructAttributes {
@@ -47,11 +49,13 @@ impl EnumAttributes {
     }
 }
 
-#[derive(Debug, Default, FromField)]
+#[derive(Debug, FromField)]
 #[darling(attributes(binja))]
 pub struct FieldAttributes {
     #[allow(unused)]
     pub ident: Option<syn::Ident>,
+
+    pub ty: syn::Type,
 
     // #[binja(skip)]
     pub skip: Option<()>,
@@ -92,6 +96,16 @@ impl FieldAttributes {
             return Err(syn::Error::new(
                 span,
                 "no_overflow can only be used with a bits attribute",
+            ));
+        }
+
+        if self.bits.is_some() && !is_valid_bit_field_type(&self.ty) {
+            return Err(syn::Error::new(
+                span,
+                format!(
+                    "bits can only be used with {}",
+                    VALID_BIT_FIELD_TYPES.join(", ")
+                ),
             ));
         }
 

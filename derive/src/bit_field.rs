@@ -1,5 +1,20 @@
 use quote::quote;
 
+pub const VALID_BIT_FIELD_TYPES: [&str; 13] = [
+    "bool", "u8", "u16", "u32", "u64", "u128", "usize", "i8", "i16", "i32", "i64", "i128", "isize",
+];
+
+pub fn is_valid_bit_field_type(ty: &syn::Type) -> bool {
+    if let syn::Type::Path(type_path) = ty {
+        if let Some(segment) = type_path.path.segments.last() {
+            if VALID_BIT_FIELD_TYPES.contains(&segment.ident.to_string().as_str()) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 pub fn gen_bit_field_serialization(
     code: &mut Vec<proc_macro2::TokenStream>,
     field_expr: &proc_macro2::TokenStream,
