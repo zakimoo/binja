@@ -83,8 +83,8 @@ impl FieldAttributes {
         }
 
         if let Some(bits) = self.bits {
-            if bits == 0 {
-                return Err(syn::Error::new(span, "bits must be greater than 0"));
+            if bits == 0 || bits > 128 {
+                return Err(syn::Error::new(span, "bits must be between 1 and 128"));
             }
         }
 
