@@ -150,6 +150,12 @@ pub fn gen_ser_fields(
                 bit_field_declared = true;
             }
 
+            if is_type_bool(&f.ty) {
+                code.push(quote! {
+                    let #field_expr = if *#field_expr {1usize} else {0usize};
+                });
+            }
+
             let allow_overflow = !attrs.no_overflow();
 
             gen_bit_field_serialization(
@@ -200,7 +206,13 @@ pub fn gen_par_fields(
         attrs.validate(f.span())?;
 
         let ident = get_field_expr(f, i);
-        let field_type = &f.ty;
+        let is_bool = is_type_bool(&f.ty);
+        let field_type = if is_bool {
+            quote! { usize }
+        } else {
+            let ty = &f.ty;
+            quote! { #ty }
+        };
         fields_names.push(ident.clone());
 
         if attrs.skip() {
@@ -259,6 +271,12 @@ pub fn gen_par_fields(
                 bit_offset += consume_bits;
                 remaining_bits -= consume_bits;
                 local_shift += consume_bits;
+            }
+
+            if is_bool {
+                code.push(quote! {
+                  let  #ident = if #ident == 0 { false } else { true };
+                });
             }
         } else {
             // if last field is a bit field smaller that 8 bits
