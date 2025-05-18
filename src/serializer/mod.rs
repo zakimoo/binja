@@ -33,6 +33,11 @@ impl BinarySerializer {
         self.output
     }
 
+    /// Returns the current configuration of the serializer.
+    pub fn config(&self) -> &crate::config::Config {
+        &self.config
+    }
+
     /// Checks if the serialized output exceeds the configured size limit.
     /// Returns an error if the limit is exceeded.
     fn check_limit(&self) -> Result<()> {
@@ -193,25 +198,5 @@ impl BinarySerializer {
     pub fn bytes(&mut self, v: &[u8]) -> Result<()> {
         self.output.put_slice(v);
         self.check_limit()
-    }
-
-    pub fn optional<T>(&mut self, v: &Option<T>) -> Result<()>
-    where
-        T: BinarySerialize,
-    {
-        match (self.config.optional_strategy, v) {
-            (crate::config::OptionalStrategy::Tagged, None) => {
-                self.bool(false)?;
-            }
-            (crate::config::OptionalStrategy::Tagged, Some(v)) => {
-                self.bool(true)?;
-                v.binary_serialize(self)?;
-            }
-            (crate::config::OptionalStrategy::Untagged, Some(v)) => {
-                v.binary_serialize(self)?;
-            }
-            (crate::config::OptionalStrategy::Untagged, None) => {}
-        }
-        Ok(())
     }
 }

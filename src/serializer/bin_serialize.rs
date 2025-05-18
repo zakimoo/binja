@@ -113,7 +113,22 @@ where
     T: BinarySerialize,
 {
     fn binary_serialize(&self, serializer: &mut BinarySerializer) -> Result<()> {
-        serializer.optional(self)
+        match serializer.config.optional_strategy {
+            crate::config::OptionalStrategy::Tagged => {
+                if let Some(v) = self {
+                    serializer.bool(true)?;
+                    v.binary_serialize(serializer)?;
+                } else {
+                    serializer.bool(false)?;
+                }
+            }
+            crate::config::OptionalStrategy::Untagged => {
+                if let Some(v) = self {
+                    v.binary_serialize(serializer)?;
+                }
+            }
+        }
+        Ok(())
     }
 }
 
