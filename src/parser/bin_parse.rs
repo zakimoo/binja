@@ -270,9 +270,23 @@ macro_rules! impl_binary_parse_for_tuple {
     };
 }
 
-impl_binary_parse_for_tuple!(T);
+impl_binary_parse_for_tuple!(T1);
 impl_binary_parse_for_tuple!(T1, T2);
 impl_binary_parse_for_tuple!(T1, T2, T3);
 impl_binary_parse_for_tuple!(T1, T2, T3, T4);
 impl_binary_parse_for_tuple!(T1, T2, T3, T4, T5);
 impl_binary_parse_for_tuple!(T1, T2, T3, T4, T5, T6);
+impl_binary_parse_for_tuple!(T1, T2, T3, T4, T5, T6, T7);
+impl_binary_parse_for_tuple!(T1, T2, T3, T4, T5, T6, T7, T8);
+impl_binary_parse_for_tuple!(T1, T2, T3, T4, T5, T6, T7, T8, T9);
+impl_binary_parse_for_tuple!(T1, T2, T3, T4, T5, T6, T7, T8, T9, T10);
+impl_binary_parse_for_tuple!(T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11);
+impl_binary_parse_for_tuple!(T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12);
+impl_binary_parse_for_tuple!(T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13);
+impl_binary_parse_for_tuple!(T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14);
+impl_binary_parse_for_tuple!(
+    T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15
+);
+impl_binary_parse_for_tuple!(
+    T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16
+);
