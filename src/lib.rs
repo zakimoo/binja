@@ -2,6 +2,7 @@ mod par;
 mod ser;
 
 pub mod config;
+pub mod containers;
 pub mod error;
 
 pub use par::{BinaryParse, parser::BinaryParser};
