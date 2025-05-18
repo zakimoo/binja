@@ -121,11 +121,16 @@ where
     where
         Self: Sized,
     {
-        if matches!(parser.config.optional_strategy, OptionalStrategy::Tagged) && !parser.bool()? {
-            return Ok(None);
+        match parser.config.optional_strategy {
+            OptionalStrategy::Tagged => match parser.bool()? {
+                true => Ok(Some(T::binary_parse(parser)?)),
+                false => Ok(None),
+            },
+            OptionalStrategy::Untagged => match T::binary_parse(parser) {
+                Ok(v) => Ok(Some(v)),
+                Err(_) => Ok(None),
+            },
         }
-
-        T::binary_parse(parser).map(Some)
     }
 }
 

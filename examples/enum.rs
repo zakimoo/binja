@@ -23,14 +23,14 @@ fn main() {
     //  variant index --> 1 byte
     let j = vec![0x00];
     let expected = EnumTagged::Unit;
-    assert_eq!(expected, from_bytes(&j).unwrap());
+    assert_eq!(expected, from_bytes(&j).unwrap().0);
 
     // new type
     //  variant index --> 1 byte
     //  value --> 4 bytes
     let j = vec![0x01, 0x01, 0x00, 0x00, 0x00];
     let expected = EnumTagged::Newtype(1);
-    assert_eq!(expected, from_bytes(&j).unwrap());
+    assert_eq!(expected, from_bytes(&j).unwrap().0);
 
     // tuple
     //  variant index --> 1 byte
@@ -38,7 +38,7 @@ fn main() {
     //  value2 --> 4 bytes
     let j = vec![0x02, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00];
     let expected = EnumTagged::Tuple(1, 2);
-    assert_eq!(expected, from_bytes(&j).unwrap());
+    assert_eq!(expected, from_bytes(&j).unwrap().0);
 
     // struct
     let j = vec![
@@ -52,5 +52,5 @@ fn main() {
         b: -2,
         c: 3.0,
     };
-    assert_eq!(expected, from_bytes(&j).unwrap());
+    assert_eq!(expected, from_bytes(&j).unwrap().0);
 }

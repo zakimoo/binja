@@ -128,11 +128,11 @@ where
 /// - **Container Length**: 4 bytes (used to decode the length of sequences, strings, etc.)
 ///
 /// # Parameters
-/// - `bytes`: A reference to the binary slice to be deserialized. The slice must represent a valid serialized value of type `T`.
+/// - `bytes`: The binary slice to deserialize. Must represent a valid serialized value of type `T`.
 ///
 /// # Returns
-/// - `Ok(T)`: The deserialized value of type `T`.
-/// - `Err(Error)`: An error if deserialization fails or the binary slice is invalid.
+/// - `Ok((T, usize))`: The deserialized value and the number of bytes read.
+/// - `Err(Error)`: If deserialization fails or the input is invalid.
 ///
 /// # Example
 /// ```rust
@@ -145,7 +145,7 @@ where
 /// }
 ///
 /// let bytes = vec![0x2A, 0x0, 0x0, 0x0, 0x1, 0x7, 0x0, 0x0, 0x0];
-/// let value: Example = from_bytes(&bytes).unwrap();
+/// let (value, size): (Example, usize) = from_bytes(&bytes).unwrap();
 /// assert_eq!(
 ///     value,
 ///     Example {
@@ -153,8 +153,9 @@ where
 ///         field2: Some(7),
 ///     }
 /// );
+/// assert_eq!(size, 0);
 /// ```
-pub fn from_bytes<T>(bytes: &[u8]) -> Result<T>
+pub fn from_bytes<T>(bytes: &[u8]) -> Result<(T, usize)>
 where
     T: BinaryParse,
 {
@@ -163,7 +164,7 @@ where
 
 /// See [`from_bytes`].
 #[cfg(feature = "serde")]
-pub fn serde_from_bytes<'a, T>(bytes: &'a [u8]) -> Result<T>
+pub fn serde_from_bytes<'a, T>(bytes: &'a [u8]) -> Result<(T, usize)>
 where
     T: Deserialize<'a>,
 {
@@ -173,12 +174,12 @@ where
 /// Deserializes a binary slice into a value of type `T` using a custom configuration.
 ///
 /// # Parameters
-/// - `bytes`: A reference to the binary slice to be deserialized. The slice must represent a valid serialized value of type `T`.
-/// - `config`: A `Config` object specifying the deserialization settings (e.g., endianness, optional strategy, etc.).
+/// - `bytes`: The binary slice to deserialize. Must represent a valid serialized value of type `T`.
+/// - `config`: The `Config` specifying deserialization settings (endianness, optional strategy, etc.).
 ///
 /// # Returns
-/// - `Ok(T)`: The deserialized value of type `T`.
-/// - `Err(Error)`: An error if deserialization fails or the binary slice is invalid.
+/// - `Ok((T, usize))`: The deserialized value and the number of bytes read.
+/// - `Err(Error)`: If deserialization fails or the input is invalid.
 ///
 /// # Example
 /// ```rust
@@ -198,7 +199,7 @@ where
 /// };
 ///
 /// let bytes = vec![0x00, 0x00, 0x00, 0x2A, 0x01, 0x00, 0x00, 0x00, 0x07];
-/// let value: Example = from_bytes_with_config(&bytes, config).unwrap();
+/// let (value, size): (Example, usize) = from_bytes_with_config(&bytes, config).unwrap();
 /// assert_eq!(
 ///     value,
 ///     Example {
@@ -206,25 +207,32 @@ where
 ///         field2: Some(7),
 ///     }
 /// );
+/// assert_eq!(size, 0);
 /// ```
-pub fn from_bytes_with_config<T>(bytes: &[u8], config: Config) -> Result<T>
+pub fn from_bytes_with_config<T>(bytes: &[u8], config: Config) -> Result<(T, usize)>
 where
     T: BinaryParse,
 {
     let mut deserializer = BinaryParser::new(bytes, config);
 
-    T::binary_parse(&mut deserializer)
+    let v = T::binary_parse(&mut deserializer)?;
+    let size = deserializer.size();
+
+    Ok((v, size))
 }
 
 /// See [`from_bytes_with_config`].
 #[cfg(feature = "serde")]
-pub fn serde_from_bytes_with_config<'a, T>(bytes: &'a [u8], config: Config) -> Result<T>
+pub fn serde_from_bytes_with_config<'a, T>(bytes: &'a [u8], config: Config) -> Result<(T, usize)>
 where
     T: Deserialize<'a>,
 {
     let mut deserializer = BinaryParser::new(bytes, config);
 
-    T::deserialize(&mut deserializer)
+    let v = T::deserialize(&mut deserializer)?;
+    let size = deserializer.size();
+
+    Ok((v, size))
 }
 
 #[macro_export]

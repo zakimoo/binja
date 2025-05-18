@@ -38,6 +38,11 @@ impl BinarySerializer {
         &self.config
     }
 
+    /// Returns a mutable reference to the output buffer.
+    pub fn size(&self) -> usize {
+        self.output.len()
+    }
+
     /// Checks if the serialized output exceeds the configured size limit.
     /// Returns an error if the limit is exceeded.
     fn check_limit(&self) -> Result<()> {

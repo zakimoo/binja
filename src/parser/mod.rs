@@ -19,9 +19,19 @@ impl<'de> BinaryParser<'de> {
     pub fn new(input: &'de [u8], config: Config) -> Self {
         Self { input, config }
     }
-}
 
-impl<'de> BinaryParser<'de> {
+    pub fn input(&self) -> &'de [u8] {
+        self.input
+    }
+
+    pub fn config(&self) -> &Config {
+        &self.config
+    }
+
+    pub fn size(&self) -> usize {
+        self.input.len()
+    }
+
     pub fn bool(&mut self) -> Result<bool> {
         match self.input.try_get_u8()? {
             0 => Ok(false),

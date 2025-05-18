@@ -113,7 +113,7 @@ fn main() {
 
     // Serialize the struct to bytes
     let struct_ser = to_bytes(&test_struct).unwrap();
-    let struct_par: TestStruct = from_bytes(&struct_ser).unwrap();
+    let struct_par: TestStruct = from_bytes(&struct_ser).unwrap().0;
     println!("serialized bytes: {:0x?}", struct_ser.to_vec());
     println!("parsed struct: {:?}", struct_par);
 
@@ -121,7 +121,7 @@ fn main() {
     let tuple_struct = TupleStruct(sep, 20, 25, 512, 2048, 15, 10, 63);
 
     let tuple_ser = to_bytes(&tuple_struct).unwrap();
-    let tuple_par: TupleStruct = from_bytes(&tuple_ser).unwrap();
+    let tuple_par: TupleStruct = from_bytes(&tuple_ser).unwrap().0;
 
     println!("serialized tuple bytes: {:0x?}", tuple_ser.to_vec());
     println!("parsed tuple struct: {:?}", tuple_par);
