@@ -252,7 +252,7 @@ mod serializer_big_endian_untagged_optional {
         BinarySerialize,
         config::{Config, EndiannessStrategy, OptionalStrategy},
         error::Result,
-        serializer::BinarySerialize,
+        ser::BinarySerialize,
         to_bytes_with_config,
     };
     use bytes::BytesMut;

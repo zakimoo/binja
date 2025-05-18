@@ -250,7 +250,7 @@ mod parser_big_endian_untagged_optional {
         config::{Config, EndiannessStrategy, OptionalStrategy},
         error::Result,
         from_bytes_with_config,
-        parser::BinaryParse,
+        par::BinaryParse,
     };
 
     pub fn from_bytes<T>(bytes: &[u8]) -> Result<T>

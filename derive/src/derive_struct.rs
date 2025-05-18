@@ -23,7 +23,7 @@ pub fn generate_struct_binary_serialize(
     for param in generics.type_params() {
         let ident = &param.ident;
         where_clause.predicates.push(parse_quote! {
-            #ident: ::binja::serializer::BinarySerialize
+            #ident: ::binja::ser::BinarySerialize
         });
     }
 
@@ -54,8 +54,8 @@ pub fn generate_struct_binary_serialize(
 
     let expand = quote! {
         #[allow(unused_variables)]
-        impl #generics binja::serializer::BinarySerialize for #struct_name #generics #where_clause{
-            fn binary_serialize(&self, serializer: &mut ::binja::serializer::BinarySerializer) -> binja::error::Result<()> {
+        impl #generics binja::ser::BinarySerialize for #struct_name #generics #where_clause{
+            fn binary_serialize(&self, serializer: &mut ::binja::ser::BinarySerializer) -> binja::error::Result<()> {
                 #fields_token
                 Ok(())
             }
@@ -78,7 +78,7 @@ pub fn generate_struct_binary_parse(
     for param in generics.type_params() {
         let ident = &param.ident;
         where_clause.predicates.push(parse_quote! {
-            #ident: ::binja::parser::BinaryParse
+            #ident: ::binja::par::BinaryParse
         });
     }
 
@@ -110,8 +110,8 @@ pub fn generate_struct_binary_parse(
     };
 
     let expand = quote! {
-        impl #generics binja::parser::BinaryParse for #name #generics #where_clause{
-            fn binary_parse(parser: &mut ::binja::parser::BinaryParser) -> binja::error::Result<Self> {
+        impl #generics binja::par::BinaryParse for #name #generics #where_clause{
+            fn binary_parse(parser: &mut ::binja::par::BinaryParser) -> binja::error::Result<Self> {
                 #code
             }
         }
@@ -173,7 +173,7 @@ pub fn gen_ser_fields(
 
             // serialize the current field
             code.push(quote! {
-                ::binja::serializer::binary_serialize(#field_expr, serializer)?;
+                ::binja::ser::binary_serialize(#field_expr, serializer)?;
             })
         }
     }
@@ -238,7 +238,7 @@ pub fn gen_par_fields(
                 // Read a new byte if starting fresh or if no byte is loaded yet
                 if bit_offset % 8 == 0 {
                     code.push(quote! {
-                        let #byte_var: u8 = ::binja::parser::binary_parse(parser)?;
+                        let #byte_var: u8 = ::binja::par::binary_parse(parser)?;
                     });
                 }
 
@@ -284,7 +284,7 @@ pub fn gen_par_fields(
             bit_offset = 0;
 
             code.push(quote! {
-                let #ident = ::binja::parser::binary_parse(parser)?;
+                let #ident = ::binja::par::binary_parse(parser)?;
             });
         }
     }

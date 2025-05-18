@@ -23,7 +23,7 @@ pub fn generate_enum_binary_serialize(
     for param in generics.type_params() {
         let ident = &param.ident;
         where_clause.predicates.push(parse_quote! {
-            #ident: ::binja::serializer::BinarySerialize
+            #ident: ::binja::ser::BinarySerialize
         });
     }
 
@@ -31,8 +31,8 @@ pub fn generate_enum_binary_serialize(
 
     let expand = quote! {
          #[allow(unused_variables)]
-        impl #generics binja::serializer::BinarySerialize for #name #generics #where_clause{
-            fn binary_serialize(&self, serializer: &mut binja::serializer::BinarySerializer) -> binja::error::Result<()> {
+        impl #generics binja::ser::BinarySerialize for #name #generics #where_clause{
+            fn binary_serialize(&self, serializer: &mut binja::ser::BinarySerializer) -> binja::error::Result<()> {
                 match self {
                     #variant_arms
                 }
@@ -93,7 +93,7 @@ fn generate_enum_serialize_variants(
         } else {
             quote! {
                 let value = #v_lit;
-                ::binja::serializer::binary_serialize(&value, serializer)?;
+                ::binja::ser::binary_serialize(&value, serializer)?;
             }
         };
 
@@ -125,15 +125,15 @@ pub fn generate_enum_binary_parse(
     for param in generics.type_params() {
         let ident = &param.ident;
         where_clause.predicates.push(parse_quote! {
-            #ident: ::binja::parser::BinaryParse
+            #ident: ::binja::par::BinaryParse
         });
     }
 
     let parse_code = gen_par_variants(&data.variants, attr)?;
 
     let expand = quote! {
-        impl #generics binja::parser::BinaryParse for #name #generics #where_clause{
-            fn binary_parse(parser: &mut binja::parser::BinaryParser) -> binja::error::Result<Self> {
+        impl #generics binja::par::BinaryParse for #name #generics #where_clause{
+            fn binary_parse(parser: &mut binja::par::BinaryParser) -> binja::error::Result<Self> {
                 #parse_code
             }
         }
@@ -231,7 +231,7 @@ fn gen_par_variants(
         }
     } else {
         quote! {
-            let current_value: #repr_ty = ::binja::parser::binary_parse(parser)?;
+            let current_value: #repr_ty = ::binja::par::binary_parse(parser)?;
         }
     };
 

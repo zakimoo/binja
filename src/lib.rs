@@ -1,13 +1,13 @@
 pub mod config;
 pub mod error;
-pub mod parser;
-pub mod serializer;
+pub mod par;
+pub mod ser;
 
 use crate::error::Result;
 use bytes::BytesMut;
 use config::Config;
-use parser::{BinaryParse, BinaryParser};
-use serializer::{BinarySerialize, BinarySerializer};
+use par::{BinaryParse, BinaryParser};
+use ser::{BinarySerialize, BinarySerializer};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -115,8 +115,8 @@ where
     T: Serialize,
 {
     let mut serializer = BinarySerializer::new(config);
-    value.serialize(&mut serializer)?;
-    Ok(serializer.output())
+    value.serialize(&mut ser)?;
+    Ok(ser.output())
 }
 
 /// Deserializes a binary slice into a value of type `T` using the default configuration.

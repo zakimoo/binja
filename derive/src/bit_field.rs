@@ -62,7 +62,7 @@ pub fn gen_bit_field_serialization(
         if *bit_offset % 8 == 0 {
             code.push(quote! {
                 // flush bit field
-                ::binja::serializer::binary_serialize(&bit_field, serializer)?;
+                ::binja::ser::binary_serialize(&bit_field, serializer)?;
                 // Reset bit_field to 0 after serialization
                 bit_field = 0u8;
             });
@@ -76,7 +76,7 @@ pub fn flush_bit_field_if_needed(code: &mut Vec<proc_macro2::TokenStream>, bit_o
     if *bit_offset % 8 != 0 {
         code.push(quote! {
             // flush bit field
-            ::binja::serializer::binary_serialize(&bit_field, serializer)?;
+            ::binja::ser::binary_serialize(&bit_field, serializer)?;
             // Reset bit_field to 0 after serialization
             bit_field = 0u8;
         });
@@ -90,7 +90,7 @@ pub fn flush_bit_field_at_end(code: &mut Vec<proc_macro2::TokenStream>, bit_offs
     if bit_offset % 8 != 0 {
         // flush bit field
         code.push(quote! {
-            ::binja::serializer::binary_serialize(&bit_field, serializer)?;
+            ::binja::ser::binary_serialize(&bit_field, serializer)?;
         });
     }
 }

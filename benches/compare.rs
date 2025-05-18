@@ -1,6 +1,6 @@
 use binja::{
     error::Result,
-    serializer::{BinarySerialize, BinarySerializer},
+    ser::{BinarySerialize, BinarySerializer},
     to_bytes,
 };
 use criterion::{Criterion, criterion_group, criterion_main};
