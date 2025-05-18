@@ -23,7 +23,7 @@ pub fn generate_struct_binary_serialize(
     for param in generics.type_params() {
         let ident = &param.ident;
         where_clause.predicates.push(parse_quote! {
-            #ident: ::binja::ser::BinarySerialize
+            #ident: ::binja::BinarySerialize
         });
     }
 
@@ -54,8 +54,8 @@ pub fn generate_struct_binary_serialize(
 
     let expand = quote! {
         #[allow(unused_variables)]
-        impl #generics binja::ser::BinarySerialize for #struct_name #generics #where_clause{
-            fn binary_serialize(&self, serializer: &mut ::binja::ser::BinarySerializer) -> binja::error::Result<()> {
+        impl #generics ::binja::BinarySerialize for #struct_name #generics #where_clause{
+            fn binary_serialize(&self, serializer: &mut ::binja::BinarySerializer) -> ::binja::error::Result<()> {
                 #fields_token
                 Ok(())
             }
@@ -173,7 +173,7 @@ pub fn gen_ser_fields(
 
             // serialize the current field
             code.push(quote! {
-                ::binja::ser::binary_serialize(#field_expr, serializer)?;
+                ::binja::BinarySerialize::binary_serialize(#field_expr, serializer)?;
             })
         }
     }

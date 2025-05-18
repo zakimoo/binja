@@ -1,8 +1,4 @@
-use binja::{
-    error::Result,
-    ser::{BinarySerialize, BinarySerializer},
-    to_bytes,
-};
+use binja::{BinarySerialize, BinarySerializer, error::Result, to_bytes};
 use criterion::{Criterion, criterion_group, criterion_main};
 
 struct TestStruct {
