@@ -4,7 +4,7 @@ use binja::{BinaryParse, BinarySerialize, to_bytes};
 struct Unit;
 
 #[derive(BinarySerialize, BinaryParse, PartialEq, Eq, Debug)]
-struct Newtype(u32);
+struct NewType(u32);
 #[derive(BinarySerialize, BinaryParse, PartialEq, Eq, Debug)]
 struct TupleStruct(u32, u32);
 
@@ -22,7 +22,7 @@ struct TestStruct {
     string: String,
     option: Option<u32>,
     unit: (),
-    newtype_struct: Newtype,
+    newtype_struct: NewType,
     seq: Vec<String>,
     tuple: (u32, u32, u8, u16, u32),
     bytes: [u8; 4],
@@ -49,7 +49,7 @@ impl Default for TestStruct {
             string: "hello 😊".to_owned(),
             option: Some(11),
             unit: (),
-            newtype_struct: Newtype(12),
+            newtype_struct: NewType(12),
             seq: vec!["a".to_owned(), "b".to_owned()],
             tuple: (13, 14, 15, 16, 17),
             bytes: [18, 19, 20, 21],
