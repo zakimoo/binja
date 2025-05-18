@@ -125,15 +125,15 @@ pub fn generate_enum_binary_parse(
     for param in generics.type_params() {
         let ident = &param.ident;
         where_clause.predicates.push(parse_quote! {
-            #ident: ::binja::par::BinaryParse
+            #ident: ::binja::BinaryParse
         });
     }
 
     let parse_code = gen_par_variants(&data.variants, attr)?;
 
     let expand = quote! {
-        impl #generics binja::par::BinaryParse for #name #generics #where_clause{
-            fn binary_parse(parser: &mut binja::par::BinaryParser) -> binja::error::Result<Self> {
+        impl #generics ::binja::BinaryParse for #name #generics #where_clause{
+            fn binary_parse(parser: &mut ::binja::BinaryParser) -> ::binja::error::Result<Self> {
                 #parse_code
             }
         }
@@ -231,7 +231,7 @@ fn gen_par_variants(
         }
     } else {
         quote! {
-            let current_value: #repr_ty = ::binja::par::binary_parse(parser)?;
+            let current_value: #repr_ty = ::binja::BinaryParse::binary_parse(parser)?;
         }
     };
 

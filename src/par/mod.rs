@@ -1,206 +1,289 @@
-mod bin_parse;
+use parser::BinaryParser;
+
+use crate::{config::OptionalStrategy, error::Result};
 #[cfg(feature = "serde")]
 mod serde_impl;
 
-pub use bin_parse::{BinaryParse, binary_parse};
+pub mod parser;
 
-use bytes::Buf;
+pub trait BinaryParse: Sized {
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self>;
 
-use crate::config::{Config, ContainerLengthStrategy, EndiannessStrategy};
-use crate::error::{Error, Result};
-
-pub struct BinaryParser<'de> {
-    input: &'de [u8],
-    // Configuration for serialization (e.g., endianness, optional strategy, etc.)
-    config: Config,
-}
-
-impl<'de> BinaryParser<'de> {
-    pub fn new(input: &'de [u8], config: Config) -> Self {
-        Self { input, config }
-    }
-
-    pub fn input(&self) -> &'de [u8] {
-        self.input
-    }
-
-    pub fn config(&self) -> &Config {
-        &self.config
-    }
-
-    pub fn size(&self) -> usize {
-        self.input.len()
-    }
-
-    pub fn bool(&mut self) -> Result<bool> {
-        match self.input.try_get_u8()? {
-            0 => Ok(false),
-            1 => Ok(true),
-            x => Err(Error::InvalidBoolValue(x)),
-        }
-    }
-
-    pub fn i8(&mut self) -> Result<i8> {
-        Ok(self.input.try_get_i8()?)
-    }
-
-    pub fn i16(&mut self) -> Result<i16> {
-        let value = match self.config.endianness_strategy {
-            EndiannessStrategy::Little => self.input.try_get_i16_le()?,
-            EndiannessStrategy::Big => self.input.try_get_i16()?,
-        };
-        Ok(value)
-    }
-
-    pub fn i32(&mut self) -> Result<i32> {
-        let value = match self.config.endianness_strategy {
-            EndiannessStrategy::Little => self.input.try_get_i32_le()?,
-            EndiannessStrategy::Big => self.input.try_get_i32()?,
-        };
-        Ok(value)
-    }
-
-    pub fn i64(&mut self) -> Result<i64> {
-        let value = match self.config.endianness_strategy {
-            EndiannessStrategy::Little => self.input.try_get_i64_le()?,
-            EndiannessStrategy::Big => self.input.try_get_i64()?,
-        };
-        Ok(value)
-    }
-
-    pub fn i128(&mut self) -> Result<i128> {
-        let value = match self.config.endianness_strategy {
-            EndiannessStrategy::Little => self.input.try_get_i128_le()?,
-            EndiannessStrategy::Big => self.input.try_get_i128()?,
-        };
-        Ok(value)
-    }
-
-    fn u8(&mut self) -> Result<u8> {
-        Ok(self.input.try_get_u8()?)
-    }
-
-    pub fn u16(&mut self) -> Result<u16> {
-        let value = match self.config.endianness_strategy {
-            EndiannessStrategy::Little => self.input.try_get_u16_le()?,
-            EndiannessStrategy::Big => self.input.try_get_u16()?,
-        };
-        Ok(value)
-    }
-
-    pub fn u32(&mut self) -> Result<u32> {
-        let value = match self.config.endianness_strategy {
-            EndiannessStrategy::Little => self.input.try_get_u32_le()?,
-            EndiannessStrategy::Big => self.input.try_get_u32()?,
-        };
-        Ok(value)
-    }
-
-    pub fn u64(&mut self) -> Result<u64> {
-        let value = match self.config.endianness_strategy {
-            EndiannessStrategy::Little => self.input.try_get_u64_le()?,
-            EndiannessStrategy::Big => self.input.try_get_u64()?,
-        };
-        Ok(value)
-    }
-
-    pub fn u128(&mut self) -> Result<u128> {
-        let value = match self.config.endianness_strategy {
-            EndiannessStrategy::Little => self.input.try_get_u128_le()?,
-            EndiannessStrategy::Big => self.input.try_get_u128()?,
-        };
-        Ok(value)
-    }
-
-    pub fn f32(&mut self) -> Result<f32> {
-        let value = match self.config.endianness_strategy {
-            EndiannessStrategy::Little => self.input.try_get_f32_le()?,
-            EndiannessStrategy::Big => self.input.try_get_f32()?,
-        };
-        Ok(value)
-    }
-
-    pub fn f64(&mut self) -> Result<f64> {
-        let value = match self.config.endianness_strategy {
-            EndiannessStrategy::Little => self.input.try_get_f64_le()?,
-            EndiannessStrategy::Big => self.input.try_get_f64()?,
-        };
-        Ok(value)
-    }
-
-    pub fn char(&mut self) -> Result<char> {
-        if self.input.is_empty() {
-            return Err(Error::NoEnoughData {
-                expected: 1,
-                available: 0,
-            });
-        }
-
-        let len = if self.input.len() < 4 {
-            self.input.len()
-        } else {
-            4
-        };
-
-        let result = std::str::from_utf8(&self.input[..len])
-            .map_err(|_| Error::InvalidUtf8 {
-                value: self.input.to_vec(),
-            })?
-            .chars()
-            .next()
-            .ok_or(Error::InvalidUtf8 {
-                value: self.input.to_vec(),
-            })?;
-
-        let char_len = result.len_utf8();
-
-        self.input = &self.input[char_len..];
-        Ok(result)
-    }
-
-    pub fn string(&mut self) -> Result<&'de str> {
-        let len = self.container_size()?;
-
-        if self.input.len() < len {
-            return Err(Error::NoEnoughData {
-                expected: len,
-                available: self.input.len(),
-            });
-        }
-
-        let value = std::str::from_utf8(&self.input[..len])
-            .ok()
-            .ok_or(Error::InvalidUtf8 {
-                value: self.input[..len].to_vec(),
-            })?;
-
-        self.input = &self.input[len..];
-        Ok(value)
-    }
-
-    pub fn bytes(&mut self, size: usize) -> Result<&'de [u8]> {
-        if self.input.len() < size {
-            return Err(Error::NoEnoughData {
-                expected: size,
-                available: self.input.len(),
-            });
-        }
-
-        let value = &self.input[..size];
-
-        self.input = &self.input[size..];
-        Ok(value)
-    }
-
-    pub fn container_size(&mut self) -> Result<usize> {
-        let size = match self.config.container_length_strategy {
-            ContainerLengthStrategy::OneByte => self.u8()? as usize,
-            ContainerLengthStrategy::TwoBytes => self.u16()? as usize,
-            ContainerLengthStrategy::FourBytes => self.u32()? as usize,
-            ContainerLengthStrategy::EightBytes => self.u64()? as usize,
-            ContainerLengthStrategy::SixteenBytes => self.u128()? as usize,
-        };
-
-        Ok(size)
+    fn binary_parse_mut(&mut self, parser: &mut BinaryParser) -> Result<()> {
+        *self = Self::binary_parse(parser)?;
+        Ok(())
     }
 }
+
+impl BinaryParse for () {
+    fn binary_parse(_parser: &mut BinaryParser) -> Result<Self> {
+        Ok(())
+    }
+}
+
+impl BinaryParse for bool {
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
+        parser.bool()
+    }
+}
+
+impl BinaryParse for i8 {
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
+        parser.i8()
+    }
+}
+
+impl BinaryParse for i16 {
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
+        parser.i16()
+    }
+}
+
+impl BinaryParse for i32 {
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
+        parser.i32()
+    }
+}
+
+impl BinaryParse for i64 {
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
+        parser.i64()
+    }
+}
+
+impl BinaryParse for i128 {
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
+        parser.i128()
+    }
+}
+
+impl BinaryParse for u8 {
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
+        parser.u8()
+    }
+}
+
+impl BinaryParse for u16 {
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
+        parser.u16()
+    }
+}
+
+impl BinaryParse for u32 {
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
+        parser.u32()
+    }
+}
+
+impl BinaryParse for u64 {
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
+        parser.u64()
+    }
+}
+impl BinaryParse for u128 {
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
+        parser.u128()
+    }
+}
+impl BinaryParse for f32 {
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
+        parser.f32()
+    }
+}
+
+impl BinaryParse for f64 {
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
+        parser.f64()
+    }
+}
+
+impl BinaryParse for char {
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
+        parser.char()
+    }
+}
+
+impl BinaryParse for String {
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
+        let str = parser.string()?;
+        Ok(str.to_string())
+    }
+}
+
+impl<T> BinaryParse for Option<T>
+where
+    T: BinaryParse,
+{
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        match parser.config().optional_strategy {
+            OptionalStrategy::Tagged => match parser.bool()? {
+                true => Ok(Some(T::binary_parse(parser)?)),
+                false => Ok(None),
+            },
+            OptionalStrategy::Untagged => match T::binary_parse(parser) {
+                Ok(v) => Ok(Some(v)),
+                Err(_) => Ok(None),
+            },
+        }
+    }
+}
+
+impl<T> BinaryParse for Vec<T>
+where
+    T: BinaryParse,
+{
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let len = parser.container_size()?;
+
+        let mut vec = Vec::with_capacity(len);
+
+        for _ in 0..len {
+            vec.push(T::binary_parse(parser)?);
+        }
+
+        Ok(vec)
+    }
+}
+
+impl<T, const N: usize> BinaryParse for [T; N]
+where
+    T: BinaryParse + Copy,
+{
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let arr = [T::binary_parse(parser)?; N];
+        Ok(arr)
+    }
+}
+
+impl<K, V> BinaryParse for std::collections::HashMap<K, V>
+where
+    K: BinaryParse + std::hash::Hash + Eq,
+    V: BinaryParse,
+{
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let len = parser.container_size()?;
+
+        let mut map = std::collections::HashMap::with_capacity(len);
+
+        for _ in 0..len {
+            let key = K::binary_parse(parser)?;
+            let value = V::binary_parse(parser)?;
+            map.insert(key, value);
+        }
+
+        Ok(map)
+    }
+}
+
+impl<T> BinaryParse for std::collections::HashSet<T>
+where
+    T: BinaryParse + std::hash::Hash + Eq,
+{
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let len = parser.container_size()?;
+
+        let mut set = std::collections::HashSet::with_capacity(len);
+
+        for _ in 0..len {
+            let value = T::binary_parse(parser)?;
+            set.insert(value);
+        }
+
+        Ok(set)
+    }
+}
+
+impl<K, V> BinaryParse for std::collections::BTreeMap<K, V>
+where
+    K: BinaryParse + std::cmp::Ord,
+    V: BinaryParse,
+{
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let len = parser.container_size()?;
+
+        let mut map = std::collections::BTreeMap::new();
+
+        for _ in 0..len {
+            let key = K::binary_parse(parser)?;
+            let value = V::binary_parse(parser)?;
+            map.insert(key, value);
+        }
+
+        Ok(map)
+    }
+}
+
+impl<T> BinaryParse for std::collections::BTreeSet<T>
+where
+    T: BinaryParse + std::cmp::Ord,
+{
+    fn binary_parse(parser: &mut BinaryParser) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let len = parser.container_size()?;
+
+        let mut set = std::collections::BTreeSet::new();
+
+        for _ in 0..len {
+            let value = T::binary_parse(parser)?;
+            set.insert(value);
+        }
+
+        Ok(set)
+    }
+}
+
+macro_rules! impl_binary_parse_for_tuple {
+    ($($name:ident),+) => {
+        impl<$($name),+> BinaryParse for ($($name,)+)
+        where
+            $($name: BinaryParse,)*
+        {
+            fn binary_parse(parser: &mut BinaryParser) -> Result<Self> {
+                Ok(($(
+                    $name::binary_parse(parser)?,
+                )+))
+            }
+        }
+    };
+}
+
+impl_binary_parse_for_tuple!(T1);
+impl_binary_parse_for_tuple!(T1, T2);
+impl_binary_parse_for_tuple!(T1, T2, T3);
+impl_binary_parse_for_tuple!(T1, T2, T3, T4);
+impl_binary_parse_for_tuple!(T1, T2, T3, T4, T5);
+impl_binary_parse_for_tuple!(T1, T2, T3, T4, T5, T6);
+impl_binary_parse_for_tuple!(T1, T2, T3, T4, T5, T6, T7);
+impl_binary_parse_for_tuple!(T1, T2, T3, T4, T5, T6, T7, T8);
+impl_binary_parse_for_tuple!(T1, T2, T3, T4, T5, T6, T7, T8, T9);
+impl_binary_parse_for_tuple!(T1, T2, T3, T4, T5, T6, T7, T8, T9, T10);
+impl_binary_parse_for_tuple!(T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11);
+impl_binary_parse_for_tuple!(T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12);
+impl_binary_parse_for_tuple!(T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13);
+impl_binary_parse_for_tuple!(T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14);
+impl_binary_parse_for_tuple!(
+    T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15
+);
+impl_binary_parse_for_tuple!(
+    T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16
+);

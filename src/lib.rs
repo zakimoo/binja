@@ -1,15 +1,15 @@
+mod par;
 mod ser;
 
 pub mod config;
 pub mod error;
-pub mod par;
 
+pub use par::{BinaryParse, parser::BinaryParser};
 pub use ser::{BinarySerialize, serializer::BinarySerializer};
 
 use crate::error::Result;
 use bytes::BytesMut;
 use config::Config;
-use par::{BinaryParse, BinaryParser};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};

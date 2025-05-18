@@ -78,7 +78,7 @@ pub fn generate_struct_binary_parse(
     for param in generics.type_params() {
         let ident = &param.ident;
         where_clause.predicates.push(parse_quote! {
-            #ident: ::binja::par::BinaryParse
+            #ident: ::binja::BinaryParse
         });
     }
 
@@ -110,8 +110,8 @@ pub fn generate_struct_binary_parse(
     };
 
     let expand = quote! {
-        impl #generics binja::par::BinaryParse for #name #generics #where_clause{
-            fn binary_parse(parser: &mut ::binja::par::BinaryParser) -> binja::error::Result<Self> {
+        impl #generics ::binja::BinaryParse for #name #generics #where_clause{
+            fn binary_parse(parser: &mut ::binja::BinaryParser) -> ::binja::error::Result<Self> {
                 #code
             }
         }
@@ -238,7 +238,7 @@ pub fn gen_par_fields(
                 // Read a new byte if starting fresh or if no byte is loaded yet
                 if bit_offset % 8 == 0 {
                     code.push(quote! {
-                        let #byte_var: u8 = ::binja::par::binary_parse(parser)?;
+                        let #byte_var: u8 = ::binja::BinaryParse::binary_parse(parser)?;
                     });
                 }
 
@@ -284,7 +284,7 @@ pub fn gen_par_fields(
             bit_offset = 0;
 
             code.push(quote! {
-                let #ident = ::binja::par::binary_parse(parser)?;
+                let #ident = ::binja::BinaryParse::binary_parse(parser)?;
             });
         }
     }
