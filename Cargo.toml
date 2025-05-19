@@ -16,7 +16,7 @@ serde = { version = "1.0.219", features = ["derive"], optional = true }
 binja_derive = { path = "./derive", optional = true }
 
 [dev-dependencies]
-criterion = "0.5.1"
+criterion = "0.6.0"
 bincode = "2.0.1"
 
 
