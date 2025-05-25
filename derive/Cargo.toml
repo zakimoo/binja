@@ -2,6 +2,12 @@
 name = "binja_derive"
 version = "0.1.0"
 edition = "2024"
+description = "Derive for #[binja(BinarySerialize, BinaryParse)]."
+publish = true
+repository = "https://github.com/zakimoo/binja"
+keywords = ["binary", "encode", "decode", "serialize", "deserialize"]
+license = "MIT"
+
 
 [lib]
 proc-macro = true

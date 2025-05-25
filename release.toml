@@ -1,0 +1,22 @@
+allow-branch = ["main"]
+
+push = true
+
+push-options = ["--follow-tags"]
+
+pre-release-commit-message = "chore: release {{version}}"
+
+tag = true
+
+tag-prefix = ""
+
+pre-release-hook = [
+  "git",
+  "cliff",
+  "-o",
+  "CHANGELOG.md",
+  "--tag",
+  "{{version}}",
+]
+
+publish = true
