@@ -10,3 +10,4 @@ see [examples](./examples/)
 
 - [ ] readme
 - [ ] Comments
+- [ ] rust docs
