@@ -11,7 +11,7 @@ pub type ContainerU64<T> = FixedSizeContainer<T, 8>;
 pub type ContainerU128<T> = FixedSizeContainer<T, 16>;
 
 #[derive(Default, Debug)]
-pub struct FixedSizeContainer<Container, const SIZE_BYTES: usize>(Container);
+pub struct FixedSizeContainer<Container, const SIZE_BYTES: usize>(pub Container);
 
 impl<Container, const SIZE: usize> FixedSizeContainer<Container, SIZE>
 where
@@ -97,5 +97,17 @@ where
         }
 
         Ok(FixedSizeContainer(container))
+    }
+}
+
+impl<Container, const SIZE: usize> IntoIterator for FixedSizeContainer<Container, SIZE>
+where
+    Container: IntoIterator,
+{
+    type Item = Container::Item;
+    type IntoIter = Container::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
     }
 }
