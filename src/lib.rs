@@ -117,7 +117,7 @@ pub fn serde_to_bytes_with_config<T>(value: &T, config: Config) -> Result<BytesM
 where
     T: Serialize,
 {
-    let mut serializer = BinarySerializer::new(config);
+    let mut ser = BinarySerializer::new(config);
     value.serialize(&mut ser)?;
     Ok(ser.output())
 }

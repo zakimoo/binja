@@ -137,21 +137,21 @@ impl<'de> de::Deserializer<'de> for &mut BinaryParser<'de> {
     where
         V: Visitor<'de>,
     {
-        visitor.visit_bytes(self.input)
+        visitor.visit_bytes(self.input())
     }
 
     fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_byte_buf(self.input.to_vec())
+        visitor.visit_byte_buf(self.input().to_vec())
     }
 
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        match self.config.optional_strategy {
+        match self.config().optional_strategy {
             OptionalStrategy::Untagged => visitor.visit_some(self),
             OptionalStrategy::Tagged => {
                 let has_value = self.bool()?;

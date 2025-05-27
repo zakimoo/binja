@@ -1,4 +1,3 @@
-use bytes::BufMut;
 use serde::{Serialize, ser};
 
 use crate::{
@@ -96,8 +95,8 @@ impl serde::ser::Serializer for &mut BinarySerializer {
     }
 
     fn serialize_none(self) -> Result<Self::Ok> {
-        if self.config.optional_strategy == OptionalStrategy::Tagged {
-            self.output.put_u8(0);
+        if self.config().optional_strategy == OptionalStrategy::Tagged {
+            self.u8(0);
         }
         self.check_limit()
     }
@@ -106,8 +105,8 @@ impl serde::ser::Serializer for &mut BinarySerializer {
     where
         T: ?Sized + serde::Serialize,
     {
-        if self.config.optional_strategy == OptionalStrategy::Tagged {
-            self.output.put_u8(1);
+        if self.config().optional_strategy == OptionalStrategy::Tagged {
+            self.u8(1);
         }
         value.serialize(self)
     }
@@ -128,7 +127,7 @@ impl serde::ser::Serializer for &mut BinarySerializer {
     ) -> Result<Self::Ok> {
         let _ = variant;
         let _ = name;
-        (variant_index as u32).serialize(self)
+        variant_index.serialize(self)
     }
 
     fn serialize_newtype_struct<T>(self, name: &'static str, value: &T) -> Result<Self::Ok>
@@ -151,7 +150,7 @@ impl serde::ser::Serializer for &mut BinarySerializer {
     {
         let _ = name;
         let _ = variant;
-        self.u32(variant_index as u32)?;
+        self.u32(variant_index)?;
         value.serialize(self)
     }
 
@@ -187,7 +186,7 @@ impl serde::ser::Serializer for &mut BinarySerializer {
         let _ = len;
         let _ = variant;
         let _ = name;
-        self.u32(variant_index as u32)?;
+        self.u32(variant_index)?;
         Ok(self)
     }
 
@@ -214,7 +213,7 @@ impl serde::ser::Serializer for &mut BinarySerializer {
         let _ = len;
         let _ = variant;
         let _ = name;
-        self.u32(variant_index as u32)?;
+        self.u32(variant_index)?;
         Ok(self)
     }
 }

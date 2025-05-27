@@ -39,7 +39,7 @@ impl BinarySerializer {
 
     /// Checks if the serialized output exceeds the configured size limit.
     /// Returns an error if the limit is exceeded.
-    fn check_limit(&self) -> Result<()> {
+    pub fn check_limit(&self) -> Result<()> {
         if let Some(limit) = self.config.limit {
             if self.output.len() > limit {
                 return Err(Error::LimitExceeded {
