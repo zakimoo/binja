@@ -3,6 +3,13 @@
 repos:
   - repo: local
     hooks:
+      - id: cargo_clippy
+        name: Cargo clippy
+        entry: cargo clippy --fix --allow-dirty --allow-staged --all-targets --all-features
+        language: system
+        types_or: [rust]
+        pass_filenames: false
+
       - id: cargo_check
         name: Cargo check
         entry: cargo check
@@ -13,13 +20,6 @@ repos:
       - id: cargo_fmt
         name: Cargo format
         entry: cargo fmt -- --check
-        language: system
-        types_or: [rust]
-        pass_filenames: false
-
-      - id: cargo_clippy
-        name: Cargo clippy
-        entry: cargo clippy --fix --allow-dirty --allow-staged --all-targets --all-features
         language: system
         types_or: [rust]
         pass_filenames: false
