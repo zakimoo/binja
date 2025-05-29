@@ -26,6 +26,11 @@ impl<'de> BinaryParser<'de> {
         self.input.len()
     }
 
+    /// Checks if the parser buffer is empty.
+    pub fn is_empty(&self) -> bool {
+        self.input.is_empty()
+    }
+
     pub fn bool(&mut self) -> Result<bool> {
         match self.input.try_get_u8()? {
             0 => Ok(false),

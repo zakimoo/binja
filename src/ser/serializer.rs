@@ -37,6 +37,11 @@ impl BinarySerializer {
         self.output.len()
     }
 
+    /// Checks if the output buffer is empty.
+    pub fn is_empty(&self) -> bool {
+        self.output.is_empty()
+    }
+
     /// Checks if the serialized output exceeds the configured size limit.
     /// Returns an error if the limit is exceeded.
     pub fn check_limit(&self) -> Result<()> {
