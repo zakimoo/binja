@@ -1,6 +1,9 @@
 use parser::BinaryParser;
 
-use crate::{config::OptionalStrategy, error::Result};
+use crate::{
+    config::OptionalStrategy,
+    error::{Error, Result},
+};
 #[cfg(feature = "serde")]
 mod serde_impl;
 
@@ -153,14 +156,23 @@ where
 
 impl<T, const N: usize> BinaryParse for [T; N]
 where
-    T: BinaryParse + Copy,
+    T: BinaryParse,
 {
     fn binary_parse(parser: &mut BinaryParser) -> Result<Self>
     where
         Self: Sized,
     {
-        let arr = [T::binary_parse(parser)?; N];
-        Ok(arr)
+        let mut vec = Vec::with_capacity(N);
+        for _ in 0..N {
+            vec.push(T::binary_parse(parser)?);
+        }
+
+        let boxed_slice: Box<[T]> = vec.into_boxed_slice();
+        let boxed_array: Box<[T; N]> = boxed_slice
+            .try_into()
+            .map_err(|_| Error::Message("Failed to convert Vec into array".into()))?;
+
+        Ok(*boxed_array)
     }
 }
 

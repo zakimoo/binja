@@ -173,12 +173,14 @@ mod parser_little_endian_tagged_optional {
             int: u32,
             opt: Option<u32>,
             seq: Vec<String>,
+            array: [u32; 2],
         }
 
         let expected = Test {
             int: 1,
             opt: Some(2),
             seq: vec!["a".to_owned(), "b".to_owned()],
+            array: [3, 4],
         };
 
         let j = vec![
@@ -190,6 +192,8 @@ mod parser_little_endian_tagged_optional {
             b'a', // string
             0x01, 0x00, 0x00, 0x00, // string size
             b'b', // string
+            0x03, 0x00, 0x00, 0x00, // array[0] value
+            0x04, 0x00, 0x00, 0x00, // array[1] value
         ];
         assert_eq!(expected, from_bytes(&j).unwrap().0);
     }
