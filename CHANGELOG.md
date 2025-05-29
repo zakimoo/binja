@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2025-05-29
+
+### 🚀 Features
+
+- Add is_empty method to BinaryParser and BinarySerializer
+
+### 🐛 Bug Fixes
+
+- Enhance BinaryParse for arrays and update tests
+
 ## [0.2.0] - 2025-05-27
 
 ### 🚀 Features
@@ -15,6 +25,7 @@ All notable changes to this project will be documented in this file.
 ### ⚙️ Miscellaneous Tasks
 
 - Reorder cargo_clippy hook in pre-commit configuration
+- Release 0.2.0
 
 ## [0.1.0] - 2025-05-26
 
