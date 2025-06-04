@@ -7,6 +7,7 @@ use syn::{Expr, parse_quote, token::Eq};
 
 use crate::{
     attribute::{EnumAttributes, VariantAttributes},
+    bounds::add_trait_bounds,
     derive_struct::{gen_par_fields, gen_ser_fields},
 };
 
@@ -16,22 +17,17 @@ pub fn generate_enum_binary_serialize(
 ) -> syn::Result<TokenStream> {
     let name = &attr.ident;
     let generics = &attr.generics;
-    let mut gen_clone = generics.clone();
 
     // Add trait bounds to each type parameter
-    let where_clause = gen_clone.make_where_clause();
-    for param in generics.type_params() {
-        let ident = &param.ident;
-        where_clause.predicates.push(parse_quote! {
-            #ident: ::binja::BinarySerialize
-        });
-    }
+    let generics_with_bounds =
+        add_trait_bounds(generics, parse_quote! { ::binja::BinarySerialize });
+    let (impl_generics, ty_generics, where_clause) = generics_with_bounds.split_for_impl();
 
     let variant_arms = generate_enum_serialize_variants(&data.variants, attr)?;
 
     let expand = quote! {
          #[allow(unused_variables)]
-        impl #generics binja::BinarySerialize for #name #generics #where_clause{
+       impl #impl_generics ::binja::BinarySerialize for #name #ty_generics #where_clause {
             fn binary_serialize(&self, serializer: &mut binja::BinarySerializer) -> binja::error::Result<()> {
                 match self {
                     #variant_arms
@@ -118,21 +114,16 @@ pub fn generate_enum_binary_parse(
 ) -> syn::Result<TokenStream> {
     let name = &attr.ident;
     let generics = &attr.generics;
-    let mut gen_clone = generics.clone();
 
     // Add trait bounds to each type parameter
-    let where_clause = gen_clone.make_where_clause();
-    for param in generics.type_params() {
-        let ident = &param.ident;
-        where_clause.predicates.push(parse_quote! {
-            #ident: ::binja::BinaryParse
-        });
-    }
+    let generics_with_bounds =
+        add_trait_bounds(generics, parse_quote! { ::binja::BinaryParse });
+    let (impl_generics, ty_generics, where_clause) = generics_with_bounds.split_for_impl();
 
     let parse_code = gen_par_variants(&data.variants, attr)?;
 
     let expand = quote! {
-        impl #generics ::binja::BinaryParse for #name #generics #where_clause{
+        impl #impl_generics ::binja::BinaryParse for #name #ty_generics #where_clause{
             fn binary_parse(parser: &mut ::binja::BinaryParser) -> ::binja::error::Result<Self> {
                 #parse_code
             }

@@ -1,5 +1,6 @@
 mod attribute;
 mod bit_field;
+mod bounds;
 mod derive_enum;
 mod derive_struct;
 

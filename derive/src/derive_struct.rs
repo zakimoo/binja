@@ -6,6 +6,7 @@ use syn::{parse_quote, spanned::Spanned};
 use crate::{
     attribute::{FieldAttributes, StructAttributes},
     bit_field::{flush_bit_field_at_end, flush_bit_field_if_needed, gen_bit_field_serialization},
+    bounds::add_trait_bounds,
 };
 
 pub const UNNAMED_FIELD_PREFIX: &str = "field_";
@@ -16,16 +17,11 @@ pub fn generate_struct_binary_serialize(
 ) -> syn::Result<TokenStream> {
     let struct_name: &syn::Ident = &attributes.ident;
     let generics = &attributes.generics;
-    let mut gen_clone = generics.clone();
 
     // Add trait bounds to each type parameter
-    let where_clause = gen_clone.make_where_clause();
-    for param in generics.type_params() {
-        let ident = &param.ident;
-        where_clause.predicates.push(parse_quote! {
-            #ident: ::binja::BinarySerialize
-        });
-    }
+    let generics_with_bounds =
+        add_trait_bounds(generics, parse_quote! { ::binja::BinarySerialize });
+    let (impl_generics, ty_generics, where_clause) = generics_with_bounds.split_for_impl();
 
     let fields_token = match &data.fields {
         // struct Example { field: String }
@@ -54,7 +50,7 @@ pub fn generate_struct_binary_serialize(
 
     let expand = quote! {
         #[allow(unused_variables)]
-        impl #generics ::binja::BinarySerialize for #struct_name #generics #where_clause{
+        impl #impl_generics ::binja::BinarySerialize for #struct_name #ty_generics #where_clause {
             fn binary_serialize(&self, serializer: &mut ::binja::BinarySerializer) -> ::binja::error::Result<()> {
                 #fields_token
                 Ok(())
@@ -71,16 +67,10 @@ pub fn generate_struct_binary_parse(
 ) -> syn::Result<TokenStream> {
     let name = &attributes.ident;
     let generics = &attributes.generics;
-    let mut gen_clone = generics.clone();
 
     // Add trait bounds to each type parameter
-    let where_clause = gen_clone.make_where_clause();
-    for param in generics.type_params() {
-        let ident = &param.ident;
-        where_clause.predicates.push(parse_quote! {
-            #ident: ::binja::BinaryParse
-        });
-    }
+    let generics_with_bounds = add_trait_bounds(generics, parse_quote! { ::binja::BinaryParse });
+    let (impl_generics, ty_generics, where_clause) = generics_with_bounds.split_for_impl();
 
     let code = match &data.fields {
         // struct Example { field: String }
@@ -110,7 +100,7 @@ pub fn generate_struct_binary_parse(
     };
 
     let expand = quote! {
-        impl #generics ::binja::BinaryParse for #name #generics #where_clause{
+        impl #impl_generics ::binja::BinaryParse for #name #ty_generics #where_clause{
             fn binary_parse(parser: &mut ::binja::BinaryParser) -> ::binja::error::Result<Self> {
                 #code
             }
