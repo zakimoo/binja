@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.1] - 2025-06-04
+
+### 🐛 Bug Fixes
+
+- Handle trait bounds correctly
+
+## [binja_derive-v0.1.1] - 2025-06-04
+
+### 🐛 Bug Fixes
+
+- Handle trait bounds correctly
+
+### ⚙️ Miscellaneous Tasks
+
+- Release binja_derive version 0.1.1
+
 ## [0.3.0] - 2025-05-29
 
 ### 🚀 Features
@@ -11,6 +27,10 @@ All notable changes to this project will be documented in this file.
 ### 🐛 Bug Fixes
 
 - Enhance BinaryParse for arrays and update tests
+
+### ⚙️ Miscellaneous Tasks
+
+- Release 0.3.0
 
 ## [0.2.0] - 2025-05-27
 
