@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.2] - 2025-06-30
+
+### 🐛 Bug Fixes
+
+- Enhance error formatting for better clarity and detail
+
 ## [0.3.1] - 2025-06-04
 
 ### 🐛 Bug Fixes
 
 - Handle trait bounds correctly
+
+### ⚙️ Miscellaneous Tasks
+
+- Release 0.3.1
 
 ## [binja_derive-v0.1.1] - 2025-06-04
 
