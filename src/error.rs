@@ -94,7 +94,57 @@ impl Display for Error {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Error::Message(msg) => formatter.write_str(msg),
-            _ => formatter.write_str("Unknown error"),
+            Error::InvalidType { expected, found } => {
+                write!(
+                    formatter,
+                    "Invalid type: expected {expected}, found {found}"
+                )
+            }
+            Error::InvalidValue { expected, found } => {
+                write!(
+                    formatter,
+                    "Invalid value: expected {expected}, found {found}"
+                )
+            }
+            Error::InvalidLength { expected, found } => {
+                write!(
+                    formatter,
+                    "Invalid length: expected {expected}, found {found}"
+                )
+            }
+            Error::InvalidVariant { expected, found } => {
+                write!(
+                    formatter,
+                    "Invalid variant: expected {expected}, found {found}"
+                )
+            }
+            Error::UnknownField { field, expected } => {
+                write!(
+                    formatter,
+                    "Unknown field: {field}. Expected fields: {expected:?}"
+                )
+            }
+            Error::MissingField { field } => write!(formatter, "Missing field: {field}"),
+            Error::DuplicateField { field } => write!(formatter, "Duplicate field: {field}"),
+            Error::LimitExceeded { limit, size } => {
+                write!(formatter, "Limit exceeded: limit {limit}, size {size}")
+            }
+            Error::NoEnoughData {
+                expected,
+                available,
+            } => {
+                write!(
+                    formatter,
+                    "Not enough data: expected {expected}, available {available}"
+                )
+            }
+            Error::InvalidBoolValue(value) => write!(formatter, "Invalid boolean value: {value}"),
+            Error::InvalidUtf8 { value } => {
+                write!(formatter, "Invalid UTF-8 sequence: {value:?}")
+            }
+            Error::Overflow { value, max } => {
+                write!(formatter, "Overflow: value {value}, max {max}")
+            }
         }
     }
 }

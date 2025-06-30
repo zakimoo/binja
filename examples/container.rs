@@ -24,5 +24,5 @@ fn main() {
 
     // Deserialize
     let deserialized: (TestStruct, usize) = from_bytes(&bytes).unwrap();
-    println!("Deserialized struct: {:?}", deserialized);
+    println!("Deserialized struct: {deserialized:?}");
 }

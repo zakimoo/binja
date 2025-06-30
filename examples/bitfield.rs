@@ -115,7 +115,7 @@ fn main() {
     let struct_ser = to_bytes(&test_struct).unwrap();
     let struct_par: TestStruct = from_bytes(&struct_ser).unwrap().0;
     println!("serialized bytes: {:0x?}", struct_ser.to_vec());
-    println!("parsed struct: {:?}", struct_par);
+    println!("parsed struct: {struct_par:?}");
 
     let sep = SeparateBitField2(1, 2, 3);
     let tuple_struct = TupleStruct(sep, 20, 25, 512, 2048, 15, 10, 63);
@@ -124,7 +124,7 @@ fn main() {
     let tuple_par: TupleStruct = from_bytes(&tuple_ser).unwrap().0;
 
     println!("serialized tuple bytes: {:0x?}", tuple_ser.to_vec());
-    println!("parsed tuple struct: {:?}", tuple_par);
+    println!("parsed tuple struct: {tuple_par:?}");
 
     assert_eq!(struct_ser, tuple_ser);
 }
